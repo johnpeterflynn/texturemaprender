@@ -9,12 +9,12 @@ add_definitions(-DPROJECT_DIR="${PROJECT_SOURCE_DIR}")
 include_directories(include)
 
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
+find_package(glfw3 3.3 REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIRS})
 
 set(SOURCES
     src/main.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw)
