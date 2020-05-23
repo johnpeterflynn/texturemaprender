@@ -1,12 +1,21 @@
+#include <iostream>
+
 /* Ask for an OpenGL Core Context */
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 int main(int argc, char** argv)
 {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+  {
+    std::cout << "Failed to initialize GLAD" << std::endl;
+    return -1;
+  }
+
   GLFWwindow* window;
 
   /* Initialize the library */
@@ -24,7 +33,7 @@ int main(int argc, char** argv)
 #endif
 
   /* Create a windowed mode window and its OpenGL context */
-  window = glfwCreateWindow( 1280, 720, "Hello World", NULL, NULL );
+  window = glfwCreateWindow( 1280, 720, "up-map Generator View", NULL, NULL );
   if (!window)
   {
      glfwTerminate();
@@ -33,6 +42,8 @@ int main(int argc, char** argv)
 
   /* Make the window's context current */
   glfwMakeContextCurrent(window);
+
+  std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window))

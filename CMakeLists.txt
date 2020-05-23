@@ -13,7 +13,8 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
 set(SOURCES
-    src/main.cpp)
+    src/main.cpp
+    src/glad.c)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
