@@ -1,21 +1,19 @@
-#include <iostream>
-
 /* Ask for an OpenGL Core Context */
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
+#include <iostream>
 
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow *window);
+
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 int main(int argc, char** argv)
 {
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-  {
-    std::cout << "Failed to initialize GLAD" << std::endl;
-    return -1;
-  }
-
   GLFWwindow* window;
 
   /* Initialize the library */
@@ -33,7 +31,7 @@ int main(int argc, char** argv)
 #endif
 
   /* Create a windowed mode window and its OpenGL context */
-  window = glfwCreateWindow( 1280, 720, "up-map Generator View", NULL, NULL );
+  window = glfwCreateWindow( SCR_WIDTH, SCR_HEIGHT, "up-map Generator View", NULL, NULL );
   if (!window)
   {
      glfwTerminate();
@@ -43,12 +41,28 @@ int main(int argc, char** argv)
   /* Make the window's context current */
   glfwMakeContextCurrent(window);
 
+  // Load GLAD to manage function pointers for OpenGL
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+  {
+    std::cout << "Failed to initialize GLAD" << std::endl;
+    return -1;
+  }
+
   std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
+
+  // Always keep opengl viewport size fixed to glfw window size
+  glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window))
   {
+    /* Process user input */
+    processInput(window);
+
     /* Render here */
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers
 
     /* Swap front and back buffers */
@@ -60,4 +74,15 @@ int main(int argc, char** argv)
 
   glfwTerminate();
   return 0;
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+void processInput(GLFWwindow *window)
+{
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }
