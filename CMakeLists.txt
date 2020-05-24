@@ -19,4 +19,4 @@ set(SOURCES
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw)
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw OpenMeshCore)
