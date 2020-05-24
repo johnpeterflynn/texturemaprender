@@ -14,6 +14,7 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 
 set(SOURCES
     src/main.cpp
+    src/stb_image.cpp
     src/glad.c)
 
 
