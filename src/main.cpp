@@ -84,7 +84,7 @@ int main()
 
     // load models
     // -----------
-    Model ourModel("resources/objects/backpack/backpack.obj");
+    Model ourModel("resources/backpack/backpack.obj");
 
 
     // draw in wireframe
