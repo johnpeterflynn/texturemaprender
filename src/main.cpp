@@ -5,13 +5,17 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <boost/program_options.hpp>
+
 #include <iostream>
 
 #include "shader_s.h"
 #include "camera.h"
 #include "model.h"
 
+namespace po = boost::program_options;
 
+int run(std::string model_path);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -31,8 +35,29 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-int main()
+int main(int argc, char *argv[])
 {
+    // Declare required options.
+    po::options_description required("Required options");
+    required.add_options()
+        ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
+    ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, required), vm);
+    po::notify(vm);
+
+    if (!vm.count("model")) {
+        std::cout << required << "\n";
+        return 1;
+    }
+
+    int r = run(vm["model"].as<std::string>());
+
+    return r;
+}
+
+int run(std::string model_path) {
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -84,8 +109,7 @@ int main()
 
     // load models
     // -----------
-    Model ourModel("resources/backpack/backpack.obj");
-
+    Model ourModel(model_path);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

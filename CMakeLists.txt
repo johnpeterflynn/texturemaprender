@@ -15,6 +15,10 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 find_library(ASSIMP_LIBRARY assimp HINTS ${PROJECT_SOURCE_DIR}/libs)
 #target_link_libraries(test PUBLIC ${PROTOBUF_LIBRARY})
 
+# Boost
+find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
 set(SOURCES
     src/main.cpp
     src/stb_image.cpp
@@ -22,4 +26,4 @@ set(SOURCES
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw OpenMeshCore ${ASSIMP_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} glfw OpenMeshCore ${ASSIMP_LIBRARY} ${Boost_LIBRARIES})
