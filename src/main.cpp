@@ -1,11 +1,15 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <boost/program_options.hpp>
+
+#include "cameraloader.h"
 
 #include <iostream>
 
@@ -15,7 +19,7 @@
 
 namespace po = boost::program_options;
 
-int run(std::string model_path);
+int run(std::string model_path, std::string poses_dir);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -26,7 +30,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));//3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -35,29 +39,36 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// poses
+const float POSES_PERIOD_SEC = 1.0f / 10.0f;
+float lastPoseTime = 0.0f;
+int num_processed_poses = 0;
+glm::mat4 current_pose = glm::mat4(1.0f);
+
 int main(int argc, char *argv[])
 {
     // Declare required options.
     po::options_description required("Required options");
     required.add_options()
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
+        ("poses", po::value<std::string>(), "path to directory of camera poses (space separated .txt files)")
     ;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, required), vm);
     po::notify(vm);
 
-    if (!vm.count("model")) {
+    if (!vm.count("model") || !vm.count("poses")) {
         std::cout << required << "\n";
         return 1;
     }
 
-    int r = run(vm["model"].as<std::string>());
+    int r = run(vm["model"].as<std::string>(), vm["poses"].as<std::string>());
 
     return r;
 }
 
-int run(std::string model_path) {
+int run(std::string model_path, std::string poses_dir) {
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -96,6 +107,10 @@ int run(std::string model_path) {
 
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
 
+    // load camera poses, intrinsics and extrinsics
+    // -----------------------------
+    CameraLoader cam_loader(poses_dir);
+
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(false);
 
@@ -118,11 +133,21 @@ int run(std::string model_path) {
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        //bool process_next_pose = false;
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        // pose rate logic
+        // --------------------
+        if (currentFrame - lastPoseTime > POSES_PERIOD_SEC &&
+                num_processed_poses < cam_loader.getNumPoses()) {
+            //process_next_pose = true;
+            current_pose = cam_loader.getPose(num_processed_poses);
+            num_processed_poses++;
+        }
 
         // input
         // -----
@@ -138,14 +163,23 @@ int run(std::string model_path) {
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
+        //glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 view = glm::mat4(1.0f);
+        // TODO: See below. Why can I rotate the view here but not the model later?
+        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        //glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 model = glm::inverse(current_pose);
+
+        // TODO: Very strange. Why can't I rotate the model here?
+        //model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        //model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
