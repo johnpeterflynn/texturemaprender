@@ -10,6 +10,10 @@
 
 namespace fs = boost::filesystem;
 
+CameraLoader::CameraLoader(std::string poses_dir) {
+    load(poses_dir);
+}
+
 void CameraLoader::load(std::string path) {
     if (fs::is_directory(path)) {
         for(auto& entry : boost::make_iterator_range(fs::directory_iterator(path), {})) {

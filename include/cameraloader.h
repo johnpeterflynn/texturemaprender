@@ -9,6 +9,9 @@
 
 class CameraLoader {
 public:
+    CameraLoader(std::string poses_dir);
+
+private:
     void load(std::string path);
     void loadPose(std::string path, int id);
 
