@@ -40,9 +40,10 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // poses
-const float POSES_PERIOD_SEC = 1.0f / 10.0f;
+const float POSES_PERIOD_SEC = 1.0f / 2.0f;
 float lastPoseTime = 0.0f;
 int num_processed_poses = 0;
+bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
 
 int main(int argc, char *argv[])
@@ -133,21 +134,21 @@ int run(std::string model_path, std::string poses_dir) {
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        //bool process_next_pose = false;
+        // pose rate logic
+        // --------------------
+        float currentPoseTime = glfwGetTime();
+        if (currentPoseTime - lastPoseTime > POSES_PERIOD_SEC &&
+                num_processed_poses < cam_loader.getNumPoses()) {
+            pose_processed = false;
+            lastPoseTime = currentPoseTime;
+        }
+
+
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        // pose rate logic
-        // --------------------
-        if (currentFrame - lastPoseTime > POSES_PERIOD_SEC &&
-                num_processed_poses < cam_loader.getNumPoses()) {
-            //process_next_pose = true;
-            current_pose = cam_loader.getPose(num_processed_poses);
-            num_processed_poses++;
-        }
 
         // input
         // -----
@@ -173,6 +174,10 @@ int run(std::string model_path, std::string poses_dir) {
 
         // render the loaded model
         //glm::mat4 model = glm::mat4(1.0f);
+        if (!pose_processed) {
+            current_pose = cam_loader.getPose(num_processed_poses);
+        }
+        // TODO: Don't invert every time
         glm::mat4 model = glm::inverse(current_pose);
 
         // TODO: Very strange. Why can't I rotate the model here?
@@ -183,11 +188,20 @@ int run(std::string model_path, std::string poses_dir) {
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+        // Write out framebuffers
+        if (!pose_processed) {
+            writeFrameBuffer();
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        if (!pose_processed) {
+            pose_processed = true;
+            num_processed_poses++;
+        }
     }
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
