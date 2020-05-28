@@ -23,6 +23,7 @@ set(SOURCES
     src/main.cpp
     src/cameraloader.cpp
     src/stb_image.cpp
+    src/stb_image_write.cpp
     src/glad.c)
 
 
