@@ -83,7 +83,16 @@ int run(std::string model_path, std::string poses_dir) {
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "uv-map Generator View", NULL, NULL);
+    // TODO: Make sure this works on non-apple screens
+    // see https://stackoverflow.com/questions/36672935/why-retina-screen-coordinate-value-is-twice-the-value-of-pixel-value
+    int window_height = SCR_HEIGHT;
+    int window_width = SCR_WIDTH;
+    // Handle retina displays mucking with window resolution
+#ifdef __APPLE__
+    window_height /= 2;
+    window_width /= 2;
+#endif
+    GLFWwindow* window = glfwCreateWindow(window_width, window_height, "uv-map Generator View", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
