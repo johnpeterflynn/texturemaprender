@@ -11,6 +11,8 @@
 
 #include "cameraloader.h"
 
+#include "stb_image_write.h"
+
 #include <iostream>
 
 #include "shader_s.h"
@@ -19,15 +21,16 @@
 
 namespace po = boost::program_options;
 
-int run(std::string model_path, std::string poses_dir);
+int run(std::string model_path, std::string poses_dir, std::string output_path);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+void writeFrameBuffer(std::string output_path);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1296;
+const unsigned int SCR_HEIGHT = 968;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));//3.0f));
@@ -53,23 +56,26 @@ int main(int argc, char *argv[])
     required.add_options()
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
         ("poses", po::value<std::string>(), "path to directory of camera poses (space separated .txt files)")
+        ("output-path", po::value<std::string>(), "path to output rendered frames")
     ;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, required), vm);
     po::notify(vm);
 
-    if (!vm.count("model") || !vm.count("poses")) {
+    if (!vm.count("model") || !vm.count("poses")|| !vm.count("output-path")) {
         std::cout << required << "\n";
         return 1;
     }
 
-    int r = run(vm["model"].as<std::string>(), vm["poses"].as<std::string>());
+    int r = run(vm["model"].as<std::string>(),
+                vm["poses"].as<std::string>(),
+                vm["output-path"].as<std::string>());
 
     return r;
 }
 
-int run(std::string model_path, std::string poses_dir) {
+int run(std::string model_path, std::string poses_dir, std::string output_path) {
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -122,7 +128,8 @@ int run(std::string model_path, std::string poses_dir) {
     CameraLoader cam_loader(poses_dir);
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(false);
+    stbi_set_flip_vertically_on_load(false); // TODO: Why isn't this necessary?
+    stbi_flip_vertically_on_write(true); // TODO: Why is this necessary?
 
     // configure global opengl state
     // -----------------------------
@@ -197,15 +204,15 @@ int run(std::string model_path, std::string poses_dir) {
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
-        // Write out framebuffers
-        if (!pose_processed) {
-            writeFrameBuffer();
-        }
-
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        // Write out framebuffers
+        if (!pose_processed) {
+            writeFrameBuffer(output_path);
+        }
 
         if (!pose_processed) {
             pose_processed = true;
@@ -217,6 +224,17 @@ int run(std::string model_path, std::string poses_dir) {
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
+}
+
+void writeFrameBuffer(std::string output_path) {
+    GLchar data[SCR_HEIGHT * SCR_WIDTH * 3]; // # pixels x # floats per pixel
+    glReadBuffer(GL_FRONT);
+    // TODO: Should this be GL_RGBA with 4 positions per pixel?
+    glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
+    std::string filename = output_path + "/" + to_string(num_processed_poses) + ".jpg";
+
+    // 100% quality, could be less
+    stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, data, 100);
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
