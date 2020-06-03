@@ -153,12 +153,12 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     {
         // pose rate logic
         // --------------------
-        float currentPoseTime = glfwGetTime();
-        if (currentPoseTime - lastPoseTime > POSES_PERIOD_SEC &&
-                num_processed_poses < cam_loader.getNumPoses()) {
+        //float currentPoseTime = glfwGetTime();
+        //if (true || (currentPoseTime - lastPoseTime > POSES_PERIOD_SEC &&
+        //        num_processed_poses < cam_loader.getNumPoses())) {
             pose_processed = false;
-            lastPoseTime = currentPoseTime;
-        }
+        //    lastPoseTime = currentPoseTime;
+        //}
 
 
         // per-frame time logic
