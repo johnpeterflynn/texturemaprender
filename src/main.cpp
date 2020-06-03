@@ -14,6 +14,7 @@
 #include "stb_image_write.h"
 
 #include <iostream>
+#include <fstream>
 
 #include "shader_s.h"
 #include "camera.h"
@@ -226,15 +227,21 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     return 0;
 }
 
-void writeFrameBuffer(std::string output_path) {
-    GLchar data[SCR_HEIGHT * SCR_WIDTH * 3]; // # pixels x # floats per pixel
-    glReadBuffer(GL_FRONT);
-    // TODO: Should this be GL_RGBA with 4 positions per pixel?
-    glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
-    std::string filename = output_path + "/" + to_string(num_processed_poses) + ".jpg";
+ void writeFrameBuffer(std::string output_path)
+{
+    // TODO: Allocate and deallocate heap_data only once
+    float *heap_data = new float[SCR_HEIGHT * SCR_WIDTH * 2];
 
-    // 100% quality, could be less
-    stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, data, 100);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RG, GL_FLOAT, heap_data);
+
+    std::string filename = output_path + "/" + to_string(num_processed_poses);
+    auto myfile = std::fstream(filename, std::ios::out | std::ios::binary);
+    // Each pixel has a (u,v) coodrinate and each coordinate is a 4-byte float
+    myfile.write((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4);
+    myfile.close();
+
+    delete [] heap_data;
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
