@@ -28,6 +28,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void writeFrameBuffer(std::string output_path);
+void writeFrameBuffer_jpg(std::string output_path);
 
 // settings
 const unsigned int SCR_WIDTH = 1296;
@@ -181,6 +182,29 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        std::cout << "Projection before: " << glm::to_string(projection) << "\n";
+        float left = -(float)SCR_WIDTH/2.0f;//0.0f;
+        float right = (float)SCR_WIDTH/2.0f;//(float)SCR_WIDTH;
+        float bottom = -(float)SCR_HEIGHT/2.0f;//(float)SCR_HEIGHT;
+        float top = (float)SCR_HEIGHT/2.0f;//0.0f;
+        float near = 0.1f;
+        float far = 100.0f;
+        float alpha = 1169.621094f;
+        float beta = 1167.105103f;
+        float x0 = 0.0f;//646.295044f;
+        float y0 = 0.0f;//489.927032f;
+        left = left * (near / alpha);
+        right = right * (near / alpha);
+        top = top * (near / beta);
+        bottom = bottom * (near / beta);
+        left = left - x0;
+        right = right - x0;
+        top = top - y0;
+        bottom = bottom - y0;
+
+        projection = glm::frustum(left, right, bottom, top, near, far);
+        std::cout << "Projection after: " << glm::to_string(projection) << "\n";
+
         //glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 view = glm::mat4(1.0f);
         // TODO: See below. Why can I rotate the view here but not the model later?
@@ -242,6 +266,17 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     myfile.close();
 
     delete [] heap_data;
+}
+
+ void writeFrameBuffer_jpg(std::string output_path) {
+     GLchar data[SCR_HEIGHT * SCR_WIDTH * 3]; // # pixels x # floats per pixel
+      glReadBuffer(GL_FRONT);
+     // TODO: Should this be GL_RGBA with 4 positions per pixel?
+     glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
+     std::string filename = output_path + "/" + to_string(num_processed_poses) + ".jpg";
+
+     // 100% quality, could be less
+     stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, data, 90);
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
