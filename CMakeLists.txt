@@ -12,6 +12,9 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 find_library(ASSIMP_LIBRARY assimp HINTS ${PROJECT_SOURCE_DIR}/libs)
 #target_link_libraries(test PUBLIC ${PROTOBUF_LIBRARY})
 
@@ -37,4 +40,6 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
+    ${TORCH_LIBRARIES}
     )
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
