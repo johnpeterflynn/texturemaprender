@@ -25,6 +25,7 @@ include_directories(${Boost_INCLUDE_DIR})
 set(SOURCES
     src/main.cpp
     src/cameraloader.cpp
+    src/deferred_neural_renderer.cpp
     src/stb_image.cpp
     src/stb_image_write.cpp
     src/glad.c)

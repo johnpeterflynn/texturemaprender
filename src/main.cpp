@@ -19,6 +19,7 @@
 #include "shader_s.h"
 #include "camera.h"
 #include "model.h"
+#include "deferred_neural_renderer.h"
 
 namespace po = boost::program_options;
 
@@ -51,6 +52,11 @@ int num_processed_poses = 0;
 bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
 
+// deferred neural renderer
+int RENDER_HEIGHT = 256;
+int RENDER_WIDTH = 256;
+DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
+
 int main(int argc, char *argv[])
 {
     // Declare required options.
@@ -58,6 +64,7 @@ int main(int argc, char *argv[])
     required.add_options()
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
         ("poses", po::value<std::string>(), "path to directory of camera poses (space separated .txt files)")
+        ("net", po::value<std::string>(), "path to deferred neural renderer network model weights")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
     ;
 
@@ -68,6 +75,11 @@ int main(int argc, char *argv[])
     if (!vm.count("model") || !vm.count("poses")|| !vm.count("output-path")) {
         std::cout << required << "\n";
         return 1;
+    }
+
+    // Init network model
+    if (vm.count("net")) {
+        dnr.load(vm["net"].as<std::string>());
     }
 
     int r = run(vm["model"].as<std::string>(),
@@ -131,7 +143,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(false); // TODO: Why isn't this necessary?
-    stbi_flip_vertically_on_write(true); // TODO: Why is this necessary?
+    stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
 
     // configure global opengl state
     // -----------------------------
@@ -258,13 +270,14 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RG, GL_FLOAT, heap_data);
-
+/*
     std::string filename = output_path + "/" + to_string(num_processed_poses);
     auto myfile = std::fstream(filename, std::ios::out | std::ios::binary);
     // Each pixel has a (u,v) coodrinate and each coordinate is a 4-byte float
     myfile.write((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4);
     myfile.close();
-
+*/
+    dnr.render(heap_data, SCR_HEIGHT, SCR_WIDTH);
     delete [] heap_data;
 }
 
