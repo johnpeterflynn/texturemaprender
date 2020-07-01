@@ -32,6 +32,7 @@ int DNRenderer::load(const std::string& model_filename) {
     try {
         std::cout << "Loading module\n";
         m_model = torch::jit::load(model_filename);
+        m_model.to(at::kCUDA);
         std::cout << "Loaded module\n";
     }
     catch (const c10::Error& e) {
@@ -63,12 +64,13 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
                                   .align_corners(false));
     timer.checkpoint("permute sample");
     sampled = sampled.permute({0, 3, 2, 1});
+    sampled = sampled.to(at::kCUDA);
 
     timer.checkpoint("build jit vector");
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(sampled);
     timer.checkpoint("forward pass");
-    torch::Tensor output = m_model.forward(inputs).toTensor();
+    torch::Tensor output = m_model.forward(inputs).toTensor().to(at::kCPU);
 
     //std::cout << "output shape: " << output.sizes() << "\n";
 
