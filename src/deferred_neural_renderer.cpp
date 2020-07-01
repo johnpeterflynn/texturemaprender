@@ -2,9 +2,14 @@
 
 #include "stb_image_write.h"
 
-#include <opencv2/opencv.hpp>
+#include "timer.h"
 
 #include <memory>
+
+#include <glad/glad.h> // holds all OpenGL type declarations
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace F = torch::nn::functional;
 
@@ -39,41 +44,79 @@ int DNRenderer::load(const std::string& model_filename) {
 }
 
 // WARNING: This function probably modifies the content of data
-void DNRenderer::render(float* data, int rows, int cols) {
+void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
+    Timer timer = Timer::get();
+    timer.checkpoint("torch from blob");
     auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
+    timer.checkpoint("flip");
     input = input.flip({0});
+    timer.checkpoint("permute");
     input = input.permute({2, 0, 1}).unsqueeze(0);
 
     //std::cout << "input shape: " << input.sizes() << "\n";
 
+    timer.checkpoint("sample from grid");
     auto sampled = F::grid_sample(input, m_grid, F::GridSampleFuncOptions()
                                   .mode(torch::kNearest)
                                   .padding_mode(torch::kBorder)
                                   .align_corners(false));
+    timer.checkpoint("permute sample");
     sampled = sampled.permute({0, 3, 2, 1});
 
+    timer.checkpoint("build jit vector");
     std::vector<torch::jit::IValue> inputs;
     inputs.push_back(sampled);
+    timer.checkpoint("forward pass");
     torch::Tensor output = m_model.forward(inputs).toTensor();
 
     //std::cout << "output shape: " << output.sizes() << "\n";
 
-    write(output);
+    write(output, writeout);
 
 }
 
-void DNRenderer::write(torch::Tensor& output) {
+void DNRenderer::write(torch::Tensor& output, bool write) {
+    Timer timer = Timer::get();
+    timer.checkpoint("permute output");
     output = output.squeeze().permute({1, 2, 0});
+
+    if (!write) {
+        timer.checkpoint("flip output");
+        output = output.flip({0});
+    }
+
+    timer.checkpoint("round output");
     output = torch::round(((output + 1.0) / 2.0) * 255);
+    timer.checkpoint("convert output to uint8_t");
     output = output.to(torch::kUInt8);
-    output = output.contiguous();
+    timer.checkpoint("make output contiguous");
+    m_output = output.contiguous();
 
-    //std::cout << "write shape: " << output.sizes() << "\n";
+    if (write) {
+        timer.checkpoint("get data pointer");
+        std::cout << "write shape: " << output.sizes() << "\n";
+        uint8_t* data_out = m_output.data_ptr<uint8_t>();
+        timer.checkpoint("write to file");
+        std::string filename = std::string("output/test") + std::to_string(index);
+        stbi_write_jpg((filename + ".jpg").c_str(), m_render_width, m_render_height, 3, data_out, 100);
+        index++;
+    }
+    timer.end();
 
-    uint8_t* data_out = output.data_ptr<uint8_t>();
-    std::string filename = std::string("output/test") + std::to_string(index);
-    stbi_write_jpg((filename + ".jpg").c_str(), m_render_width, m_render_height, 3, data_out, 100);
-    index++;
+
+    //glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
+
+    //glLoadIdentity();
+    //glRasterPos2i(0, 0);
+    //glDrawPixels(m_render_width, m_render_height, GL_RGB, GL_UNSIGNED_INT, data_out);
+
+   // glReadBuffer(GL_BACK);
+    //glWindowPos2i(0,0);
+    //glDrawPixels(m_render_width, m_render_height, GL_RGB, GL_UNSIGNED_BYTE, data_out);
+
+    //std::string filename = std::string("output/test") + std::to_string(index);
+    //stbi_write_jpg((filename + ".jpg").c_str(), m_render_width, m_render_height, 3, data_out, 100);
+    //index++;
 
 }

@@ -28,7 +28,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-void writeFrameBuffer(std::string output_path);
+void writeFrameBuffer(std::string output_path, bool write);
 void writeFrameBuffer_jpg(std::string output_path);
 
 // settings
@@ -53,8 +53,9 @@ bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
 
 // deferred neural renderer
-int RENDER_HEIGHT = 256;
-int RENDER_WIDTH = 256;
+int RENDER_HEIGHT = 512;//2*256;//SCR_HEIGHT;
+int RENDER_WIDTH = 512;//1296;//SCR_WIDTH;
+bool livemode = false;
 DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
 
 int main(int argc, char *argv[])
@@ -135,6 +136,60 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         return -1;
     }
 
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // generate texture
+    unsigned int texColorBuffer;
+    glGenTextures(1, &texColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // attach it to currently bound framebuffer object
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "Framebuffer okay\n";
+     }else {
+        std::cout << "Framebuffer not okay\n";
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates. NOTE that this plane is now much smaller and at the top of the screen
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f,  -1.0f,  0.0f, 0.0f,
+         1.0f,  -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f,  -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+    // screen quad VAO
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
 
     // load camera poses, intrinsics and extrinsics
@@ -152,6 +207,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     // build and compile shaders
     // -------------------------
     Shader ourShader("src/vertexshader.vs", "src/fragmentshader.fs");
+    Shader ourShaderFull("src/vertexshadercolor.vs", "src/fragmentshadercolor.fs");
 
     // load models
     // -----------
@@ -162,8 +218,21 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
     // render loop
     // -----------
+    GLchar* data = new GLchar[SCR_HEIGHT * SCR_WIDTH * 3];
+    for(int i = 0; i < SCR_HEIGHT * SCR_WIDTH * 3; i++) {
+        data[i] = 255;
+    }
+
     while (!glfwWindowShouldClose(window))
     {
+        if (livemode) {
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+            glEnable(GL_DEPTH_TEST);
+        }
+
+        //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         // pose rate logic
         // --------------------
         //float currentPoseTime = glfwGetTime();
@@ -187,6 +256,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         // render
         // ------
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+        //glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // don't forget to enable shader before setting uniforms
@@ -194,7 +264,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        std::cout << "Projection before: " << glm::to_string(projection) << "\n";
+        //std::cout << "Projection before: " << glm::to_string(projection) << "\n";
         float left = -(float)SCR_WIDTH/2.0f;//0.0f;
         float right = (float)SCR_WIDTH/2.0f;//(float)SCR_WIDTH;
         float bottom = -(float)SCR_HEIGHT/2.0f;//(float)SCR_HEIGHT;
@@ -215,10 +285,10 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         bottom = bottom - y0;
 
         projection = glm::frustum(left, right, bottom, top, near, far);
-        std::cout << "Projection after: " << glm::to_string(projection) << "\n";
+        //std::cout << "Projection after: " << glm::to_string(projection) << "\n";
 
-        //glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        //glm::mat4 view = glm::mat4(1.0f);
         // TODO: See below. Why can I rotate the view here but not the model later?
         view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -226,12 +296,12 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         ourShader.setMat4("view", view);
 
         // render the loaded model
-        //glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
         if (!pose_processed) {
-            current_pose = cam_loader.getPose(num_processed_poses);
+            //current_pose = cam_loader.getPose(num_processed_poses);
         }
         // TODO: Don't invert every time
-        glm::mat4 model = glm::inverse(current_pose);
+        //glm::mat4 model = glm::inverse(current_pose);
 
         // TODO: Very strange. Why can't I rotate the model here?
         //model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -239,7 +309,38 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         //model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
+
         ourModel.Draw(ourShader);
+        //glDrawBuffer(GL_BACK);
+        //glDrawPixels(SCR_HEIGHT, SCR_WIDTH, GL_RGB, GL_FLOAT, data);
+        //glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+
+        //glLoadIdentity();
+        //glRasterPos2i(0, 0);
+
+        //glReadBuffer(GL_FRONT);
+        //glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        if (livemode) {
+            writeFrameBuffer("", false);
+
+            // second pass
+            glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+            glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            ourShaderFull.use();
+            glBindVertexArray(quadVAO);
+            glDisable(GL_DEPTH_TEST);
+            glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+            uint8_t* data_out = dnr.m_output.data_ptr<uint8_t>();
+
+            glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+
+
+
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -248,7 +349,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
         // Write out framebuffers
         if (!pose_processed) {
-            writeFrameBuffer(output_path);
+            //writeFrameBuffer(output_path);
         }
 
         if (!pose_processed) {
@@ -256,6 +357,7 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
             num_processed_poses++;
         }
     }
+    delete[] data;
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -263,21 +365,44 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     return 0;
 }
 
- void writeFrameBuffer(std::string output_path)
+ void writeFrameBuffer(std::string output_path, bool write)
 {
+    std::cout << "Start neural rendering\n";
     // TODO: Allocate and deallocate heap_data only once
     float *heap_data = new float[SCR_HEIGHT * SCR_WIDTH * 2];
+    //GLchar *heap_data = new GLchar[SCR_HEIGHT * SCR_WIDTH * 3];
 
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RG, GL_FLOAT, heap_data);
-/*
-    std::string filename = output_path + "/" + to_string(num_processed_poses);
-    auto myfile = std::fstream(filename, std::ios::out | std::ios::binary);
+    //glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, heap_data);
+
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //glDrawBuffer(GL_FRONT);
+
+    dnr.render(heap_data, SCR_HEIGHT, SCR_WIDTH, write);
+
+
+
+
+
+    // Maybe clear also
+
+    //glLoadIdentity();
+    //glRasterPos2i(0, 0);
+    //glDrawPixels( RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_INT, heap_data);
+
+    std::cout << "Finish neural rendering\n";
+
+    //std::string filename = std::string("./output/") + to_string(num_processed_poses) + ".jpg";
+    //std::string filename = output_path + "/" + to_string(num_processed_poses);
+    //auto myfile = std::fstream(filename, std::ios::out | std::ios::binary);
     // Each pixel has a (u,v) coodrinate and each coordinate is a 4-byte float
-    myfile.write((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4);
-    myfile.close();
-*/
-    dnr.render(heap_data, SCR_HEIGHT, SCR_WIDTH);
+    //myfile.write((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4);
+    //myfile.close();
+    //std::cout << "Writing\n";
+    //stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, heap_data, 100);
+
     delete [] heap_data;
 }
 
@@ -307,6 +432,8 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        writeFrameBuffer("", true);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
