@@ -26,6 +26,8 @@ DNRenderer::DNRenderer(int height, int width)
             m_grid[0][row][col][1] = 2.0 * (col / (float)(m_render_width - 1)) - 1.0;
         }
     }
+
+    m_grid = m_grid.to(at::kCUDA);
 }
 
 int DNRenderer::load(const std::string& model_filename) {
@@ -47,30 +49,49 @@ int DNRenderer::load(const std::string& model_filename) {
 // WARNING: This function probably modifies the content of data
 void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     Timer& timer = Timer::get();
+    timer.checkpoint("checkpoint test 1");
+    timer.checkpoint("checkpoint test 2");
+    timer.checkpoint("checkpoint test 3");
+    timer.checkpoint("checkpoint test 4");
+    timer.checkpoint("checkpoint test 5");
+    timer.checkpoint("checkpoint test 6");
+
     timer.checkpoint("torch from blob");
     auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
+
+    timer.checkpoint("pass input to cuda");
+    input = input.to(at::kCUDA);
+
     timer.checkpoint("flip");
     input = input.flip({0});
-    timer.checkpoint("permute");
+    timer.checkpoint("unsqueeze");
     input = input.permute({2, 0, 1}).unsqueeze(0);
+    //input = input.unsqueeze(0);
 
     //std::cout << "input shape: " << input.sizes() << "\n";
 
+    //timer.checkpoint("pass input to cuda");
+    //input = input.to(at::kCUDA);
+
     timer.checkpoint("sample from grid");
-    auto sampled = F::grid_sample(input, m_grid, F::GridSampleFuncOptions()
+    input = F::grid_sample(input, m_grid, F::GridSampleFuncOptions()
                                   .mode(torch::kNearest)
                                   .padding_mode(torch::kBorder)
                                   .align_corners(false));
     timer.checkpoint("permute sample");
-    sampled = sampled.permute({0, 3, 2, 1});
-    sampled = sampled.to(at::kCUDA);
+    input = input.permute({0, 3, 2, 1});
+
+    std::cout << "input shape: " << input.sizes() << "\n";
 
     timer.checkpoint("build jit vector");
     std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(sampled);
+    inputs.push_back(input);
     timer.checkpoint("forward pass");
-    torch::Tensor output = m_model.forward(inputs).toTensor().to(at::kCPU);
+    std::cout << "forward pass\n";
+    auto output = m_model.forward(inputs).toTensor();
+    //timer.checkpoint("to cpu");
+    //torch::Tensor output = output_f.to(at::kCPU);
 
     //std::cout << "output shape: " << output.sizes() << "\n";
 
@@ -88,12 +109,18 @@ void DNRenderer::write(torch::Tensor& output, bool write) {
         output = output.flip({0});
     }
 
+    timer.checkpoint("rescale output");
+    output = ((output + 1.0) / 2.0) * 255;
     timer.checkpoint("round output");
-    output = torch::round(((output + 1.0) / 2.0) * 255);
+    output = torch::round(output);
     timer.checkpoint("convert output to uint8_t");
     output = output.to(torch::kUInt8);
     timer.checkpoint("make output contiguous");
-    m_output = output.contiguous();
+    output = output.contiguous();
+    timer.checkpoint("to cpu");
+    output = output.to(at::kCPU);
+
+    m_output = output;
 
     if (write) {
         timer.checkpoint("get data pointer");
