@@ -46,7 +46,7 @@ int DNRenderer::load(const std::string& model_filename) {
 
 // WARNING: This function probably modifies the content of data
 void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
-    Timer timer = Timer::get();
+    Timer& timer = Timer::get();
     timer.checkpoint("torch from blob");
     auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
@@ -79,7 +79,7 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
 }
 
 void DNRenderer::write(torch::Tensor& output, bool write) {
-    Timer timer = Timer::get();
+    Timer& timer = Timer::get();
     timer.checkpoint("permute output");
     output = output.squeeze().permute({1, 2, 0});
 
