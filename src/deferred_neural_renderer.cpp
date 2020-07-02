@@ -77,7 +77,8 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     timer.checkpoint("flip");
     input = input.flip({0});
     timer.checkpoint("unsqueeze");
-    input = input.permute({2, 0, 1}).unsqueeze(0);
+    //input = input.permute({2, 0, 1}).unsqueeze(0);
+    input = input.permute({2, 1, 0}).unsqueeze(0);
     //input = input.unsqueeze(0);
 
     //std::cout << "input shape: " << input.sizes() << "\n";
@@ -91,7 +92,8 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
                                   .padding_mode(torch::kBorder)
                                   .align_corners(false));
     timer.checkpoint("permute sample");
-    input = input.permute({0, 3, 2, 1});
+    //input = input.permute({0, 3, 2, 1});
+    input = input.permute({0, 2, 3, 1});
 
     std::cout << "input shape: " << input.sizes() << "\n";
 

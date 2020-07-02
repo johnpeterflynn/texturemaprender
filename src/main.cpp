@@ -49,9 +49,9 @@ glm::mat4 current_pose = glm::mat4(1.0f);
 
 
 // deferred neural renderer
-int RENDER_HEIGHT = 512;//2*256;//SCR_HEIGHT;
-int RENDER_WIDTH = 512;//1296;//SCR_WIDTH;
-bool livemode = false;
+int RENDER_HEIGHT = SCR_HEIGHT;//SCR_HEIGHT;//2*256;//SCR_HEIGHT;
+int RENDER_WIDTH = SCR_WIDTH;//SCR_HEIGHT;//1296;//SCR_WIDTH;
+bool livemode = true;
 DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
 
 FrameWriter frameWriter;
