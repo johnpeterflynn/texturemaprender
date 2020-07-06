@@ -9,6 +9,8 @@
 
 #include <boost/program_options.hpp>
 
+#include <gzip/compress.hpp>
+
 #include "cameraloader.h"
 
 #include "stb_image_write.h"
@@ -365,7 +367,16 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     return 0;
 }
 
- void writeFrameBuffer(std::string output_path, bool write)
+static void compress_write_file(char *buf, int n, const std::string& filename)
+{
+    std::string compressed_data = gzip::compress(buf, n);
+
+    auto myfile = std::fstream(filename + ".gz", std::ios::out | std::ios::binary);
+    myfile.write(compressed_data.data(), compressed_data.size());
+    myfile.close();
+}
+
+ void writeFrameBuffer(std::string output_path)
 {
     std::cout << "Start neural rendering\n";
     // TODO: Allocate and deallocate heap_data only once
@@ -402,6 +413,10 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
     //myfile.close();
     //std::cout << "Writing\n";
     //stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, heap_data, 100);
+
+    std::string filename = output_path + "/" + to_string(num_processed_poses);
+
+    compress_write_file((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4, filename);
 
     delete [] heap_data;
 }
