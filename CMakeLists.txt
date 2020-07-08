@@ -27,6 +27,7 @@ set(SOURCES
     src/cameraloader.cpp
     src/deferred_neural_renderer.cpp
     src/timer.cpp
+    src/frame_writer.cpp
     src/stb_image.cpp
     src/stb_image_write.cpp
     src/glad.c)

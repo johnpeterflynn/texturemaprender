@@ -35,6 +35,7 @@ public:
     // constructor, expects a filepath to a 3D model.
     Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
     {
+        stbi_set_flip_vertically_on_load(false); // TODO: Is this necessary?
         loadModel(path);
     }
 

@@ -9,21 +9,14 @@
 
 #include <boost/program_options.hpp>
 
-#include <gzip/compress.hpp>
-
 #include "cameraloader.h"
-
-#include "stb_image_write.h"
-
-#include <iostream>
-#include <fstream>
+#include "frame_writer.h"
 
 #include "shader_s.h"
 #include "camera.h"
 #include "model.h"
 #include "deferred_neural_renderer.h"
 
-//#include <iomanip>
 
 namespace po = boost::program_options;
 
@@ -32,8 +25,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-void writeFrameBuffer(std::string output_path, bool write);
-void writeFrameBuffer_jpg(std::string output_path);
 
 // settings
 const unsigned int SCR_WIDTH = 1296;
@@ -208,10 +199,6 @@ int run(std::string model_path, std::string poses_dir,
     CameraLoader cam_loader(cam_params_dir, poses_dir);
     camera.setParams(cam_loader.m_intrinsics, cam_loader.m_extrinsics);
 
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(false); // TODO: Why isn't this necessary?
-    stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
-
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
@@ -224,6 +211,8 @@ int run(std::string model_path, std::string poses_dir,
     // load models
     // -----------
     Model ourModel(model_path);
+
+    FrameWriter frameWriter(output_path);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -334,7 +323,8 @@ int run(std::string model_path, std::string poses_dir,
 
         // Write out framebuffers
         if (!pose_processed) {
-            //writeFrameBuffer(output_path);
+            frameWriter.WriteAsTexcoord(num_processed_poses,
+                                        SCR_HEIGHT, SCR_WIDTH);
         }
 
         if (!pose_processed) {
@@ -348,71 +338,6 @@ int run(std::string model_path, std::string poses_dir,
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
-}
-
-static void compress_write_file(char *buf, int n, const std::string& filename)
-{
-    std::string compressed_data = gzip::compress(buf, n);
-
-    auto myfile = std::fstream(filename + ".gz", std::ios::out | std::ios::binary);
-    myfile.write(compressed_data.data(), compressed_data.size());
-    myfile.close();
-}
-
- void writeFrameBuffer(std::string output_path)
-{
-    std::cout << "Start neural rendering\n";
-    // TODO: Allocate and deallocate heap_data only once
-    float *heap_data = new float[SCR_HEIGHT * SCR_WIDTH * 2];
-    //GLchar *heap_data = new GLchar[SCR_HEIGHT * SCR_WIDTH * 3];
-
-    glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RG, GL_FLOAT, heap_data);
-    //glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, heap_data);
-
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //glDrawBuffer(GL_FRONT);
-
-    dnr.render(heap_data, SCR_HEIGHT, SCR_WIDTH, write);
-
-
-
-
-
-    // Maybe clear also
-
-    //glLoadIdentity();
-    //glRasterPos2i(0, 0);
-    //glDrawPixels( RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_INT, heap_data);
-
-    std::cout << "Finish neural rendering\n";
-
-    //std::string filename = std::string("./output/") + to_string(num_processed_poses) + ".jpg";
-    //std::string filename = output_path + "/" + to_string(num_processed_poses);
-    //auto myfile = std::fstream(filename, std::ios::out | std::ios::binary);
-    // Each pixel has a (u,v) coodrinate and each coordinate is a 4-byte float
-    //myfile.write((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4);
-    //myfile.close();
-    //std::cout << "Writing\n";
-    //stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, heap_data, 100);
-
-    std::string filename = output_path + "/" + to_string(num_processed_poses);
-
-    compress_write_file((char*)heap_data, SCR_HEIGHT * SCR_WIDTH * 2 * 4, filename);
-
-    delete [] heap_data;
-}
-
- void writeFrameBuffer_jpg(std::string output_path) {
-     GLchar data[SCR_HEIGHT * SCR_WIDTH * 3]; // # pixels x # floats per pixel
-      glReadBuffer(GL_FRONT);
-     // TODO: Should this be GL_RGBA with 4 positions per pixel?
-     glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
-     std::string filename = output_path + "/" + to_string(num_processed_poses) + ".jpg";
-
-     // 100% quality, could be less
-     stbi_write_jpg(filename.c_str(), SCR_WIDTH, SCR_HEIGHT, 3, data, 90);
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
