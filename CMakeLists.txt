@@ -37,7 +37,6 @@ target_link_libraries(
     ${PROJECT_NAME}
     ${OPENGL_LIBRARIES}
     glfw
-    OpenMeshCore
     ${ASSIMP_LIBRARY}
     ${Boost_LIBRARIES}
     ${Boost_FILESYSTEM_LIBRARY}
