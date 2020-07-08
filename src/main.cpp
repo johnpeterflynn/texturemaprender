@@ -23,9 +23,11 @@
 #include "model.h"
 #include "deferred_neural_renderer.h"
 
+//#include <iomanip>
+
 namespace po = boost::program_options;
 
-int run(std::string model_path, std::string poses_dir, std::string output_path);
+int run(std::string model_path, std::string poses_dir, string cam_params_dir, std::string output_path);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -68,6 +70,7 @@ int main(int argc, char *argv[])
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
         ("poses", po::value<std::string>(), "path to directory of camera poses (space separated .txt files)")
         ("net", po::value<std::string>(), "path to deferred neural renderer network model weights")
+        ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
     ;
 
@@ -75,7 +78,10 @@ int main(int argc, char *argv[])
     po::store(po::parse_command_line(argc, argv, required), vm);
     po::notify(vm);
 
-    if (!vm.count("model") || !vm.count("poses")|| !vm.count("output-path")) {
+    if (!vm.count("model")
+            || !vm.count("poses")
+            || !vm.count("cam-params")
+            || !vm.count("output-path")) {
         std::cout << required << "\n";
         return 1;
     }
@@ -87,12 +93,15 @@ int main(int argc, char *argv[])
 
     int r = run(vm["model"].as<std::string>(),
                 vm["poses"].as<std::string>(),
+                vm["cam-params"].as<std::string>(),
                 vm["output-path"].as<std::string>());
 
     return r;
 }
 
-int run(std::string model_path, std::string poses_dir, std::string output_path) {
+int run(std::string model_path, std::string poses_dir,
+        std::string cam_params_dir, std::string output_path)
+{
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -196,7 +205,8 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
 
     // load camera poses, intrinsics and extrinsics
     // -----------------------------
-    CameraLoader cam_loader(poses_dir);
+    CameraLoader cam_loader(cam_params_dir, poses_dir);
+    camera.setParams(cam_loader.m_intrinsics, cam_loader.m_extrinsics);
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(false); // TODO: Why isn't this necessary?
@@ -265,51 +275,24 @@ int run(std::string model_path, std::string poses_dir, std::string output_path) 
         ourShader.use();
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        //std::cout << "Projection before: " << glm::to_string(projection) << "\n";
-        float left = -(float)SCR_WIDTH/2.0f;//0.0f;
-        float right = (float)SCR_WIDTH/2.0f;//(float)SCR_WIDTH;
-        float bottom = -(float)SCR_HEIGHT/2.0f;//(float)SCR_HEIGHT;
-        float top = (float)SCR_HEIGHT/2.0f;//0.0f;
-        float near = 0.1f;
-        float far = 100.0f;
-        float alpha = 1169.621094f;
-        float beta = 1167.105103f;
-        float x0 = 0.0f;//646.295044f;
-        float y0 = 0.0f;//489.927032f;
-        left = left * (near / alpha);
-        right = right * (near / alpha);
-        top = top * (near / beta);
-        bottom = bottom * (near / beta);
-        left = left - x0;
-        right = right - x0;
-        top = top - y0;
-        bottom = bottom - y0;
+        glm::mat4 projection = camera.GetProjectionMatrix(SCR_HEIGHT, SCR_WIDTH, 0.1f, 100.0f);
 
-        projection = glm::frustum(left, right, bottom, top, near, far);
-        //std::cout << "Projection after: " << glm::to_string(projection) << "\n";
-
-        glm::mat4 view = camera.GetViewMatrix();
-        //glm::mat4 view = glm::mat4(1.0f);
-        // TODO: See below. Why can I rotate the view here but not the model later?
-        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        // TODO: Use view matrix from camera
+        //glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 view = glm::mat4(1.0f);
 
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
+
         if (!pose_processed) {
             //current_pose = cam_loader.getPose(num_processed_poses);
         }
         // TODO: Don't invert every time
         //glm::mat4 model = glm::inverse(current_pose);
 
-        // TODO: Very strange. Why can't I rotate the model here?
-        //model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-        //model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
 
         ourModel.Draw(ourShader);

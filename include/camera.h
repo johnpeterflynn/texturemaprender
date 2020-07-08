@@ -22,7 +22,6 @@ const float SPEED       =  2.5f;
 const float SENSITIVITY =  0.1f;
 const float ZOOM        =  44.0f;//45.0f;
 
-
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
 class Camera
 {
@@ -60,10 +59,54 @@ public:
         updateCameraVectors();
     }
 
+    void setParams(glm::mat4 intrinsics, glm::mat4 extrinsics) {
+        m_intrinsics = intrinsics;
+        m_extrinsics = extrinsics;
+    }
+
+    glm::mat4 GetProjectionMatrix(const float height, const float width,
+                                  const float near, const float far)
+    {
+        float left = -width/2.0f;
+        float right = width/2.0f;
+        float bottom = -height/2.0f;
+        float top = height/2.0f;
+        float alpha = m_intrinsics[0][0];
+        float beta = m_intrinsics[1][1];
+        float x0 = 0.0f;//m_intrinsics[][]
+        float y0 = 0.0f;//m_intrinsics[][]
+        left = left * (near / alpha);
+        right = right * (near / alpha);
+        top = top * (near / beta);
+        bottom = bottom * (near / beta);
+        left = left - x0;
+        right = right - x0;
+        top = top - y0;
+        bottom = bottom - y0;
+
+        auto projection = glm::frustum(left, right, bottom, top, near, far);
+
+        // TODO: Build this rotation into the construction of the frustum
+        projection = glm::rotate(projection, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        return projection;
+    }
+
+    // TODO: WARNING: This function is currently incompatible with GetProjectionMatrix().
+    //  Need to investigate why.
     // returns the view matrix calculated using Euler Angles and the LookAt Matrix
     glm::mat4 GetViewMatrix()
     {
-        return glm::lookAt(Position, Position + Front, Up);
+        glm::mat4 view = glm::lookAt(Position, Position + Front, Up);
+
+        // Rotate to make +Z the up direction as often defined by 3D scans
+        // TODO: Verify and account for this elsewhere.
+        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        // TODO: Does extrinsics need to be inverted?
+        view = m_extrinsics * view;
+
+        return view;
     }
 
     // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
@@ -126,5 +169,8 @@ private:
         Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         Up    = glm::normalize(glm::cross(Right, Front));
     }
+
+    glm::mat4 m_intrinsics;
+    glm::mat4 m_extrinsics;
 };
 #endif

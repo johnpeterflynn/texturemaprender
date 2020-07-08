@@ -11,16 +11,26 @@
 
 namespace fs = boost::filesystem;
 
-CameraLoader::CameraLoader(std::string poses_dir) {
-    load(poses_dir);
+CameraLoader::CameraLoader(std::string params_dir, std::string poses_dir) {
+    loadParams(params_dir);
+    loadPoses(poses_dir);
 }
 
-void CameraLoader::load(std::string path) {
+void CameraLoader::loadParams(std::string params_dir) {
+    fs::path intrinsics_path = fs::path(params_dir) / "intrinsic_color.txt";
+    fs::path extrinsics_path = fs::path(params_dir) / "extrinsic_color.txt";
+
+    m_intrinsics = loadMat4(intrinsics_path.string());
+    m_extrinsics = loadMat4(extrinsics_path.string());
+}
+
+void CameraLoader::loadPoses(std::string path) {
     if (fs::is_directory(path)) {
         for(auto& entry : boost::make_iterator_range(fs::directory_iterator(path), {})) {
             fs::path p_file(entry.path());
             int id = std::stoi(p_file.stem().string());
-            loadPose(entry.path().string(), id);
+            auto pose = loadMat4(entry.path().string());
+            addPose(id, pose);
         }
     }
     else {
@@ -34,7 +44,7 @@ void CameraLoader::load(std::string path) {
     std::sort(m_ids.begin(), m_ids.end());
 }
 
-void CameraLoader::loadPose(std::string path, int id) {
+glm::mat4 CameraLoader::loadMat4(std::string path) {
     int MAT_SIZE = 4;
     float data[MAT_SIZE * MAT_SIZE];
     std::ifstream infile(path);
@@ -42,12 +52,12 @@ void CameraLoader::loadPose(std::string path, int id) {
     // Read pose line by line (4x4 matrix)
     for (int i = 0; i < MAT_SIZE * MAT_SIZE; i += MAT_SIZE) {
         infile >> data[i] >> data[i+1] >> data[i+2] >> data[i+3];
-
     }
 
     glm::mat4 m = glm::make_mat4(data);
     m = glm::transpose(m); // Entires are read row-wise but stored column-wise
-    addPose(id, m);
+
+    return m;
 }
 
 void CameraLoader::addPose(int id, const glm::mat4& pose) {
