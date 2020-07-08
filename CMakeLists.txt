@@ -19,7 +19,7 @@ find_library(ASSIMP_LIBRARY assimp HINTS ${PROJECT_SOURCE_DIR}/libs)
 #target_link_libraries(test PUBLIC ${PROTOBUF_LIBRARY})
 
 # Boost
-find_package(Boost 1.40 COMPONENTS program_options system filesystem REQUIRED)
+find_package(Boost 1.70 COMPONENTS program_options system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 set(SOURCES
