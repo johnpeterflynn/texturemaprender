@@ -18,6 +18,9 @@ DNRenderer::DNRenderer(int height, int width)
     , m_render_width(width)
     , index(0)
 {
+#ifdef __APPLE__
+    std::cout << "Warning: CUDA not suppored on Apple device. Using CPU.\n";
+#endif
     m_grid = torch::ones({1, m_render_height, m_render_width, 2}, torch::kFloat32);
 
     for (int row = 0; row < m_render_height; row++) {
@@ -26,15 +29,20 @@ DNRenderer::DNRenderer(int height, int width)
             m_grid[0][row][col][1] = 2.0 * (col / (float)(m_render_width - 1)) - 1.0;
         }
     }
-
+#ifndef __APPLE__
     m_grid = m_grid.to(at::kCUDA);
+#endif
 }
 
 int DNRenderer::load(const std::string& model_filename) {
     try {
         std::cout << "Loading module\n";
         m_model = torch::jit::load(model_filename);
+
+#ifndef __APPLE__
         m_model.to(at::kCUDA);
+#endif
+
         std::cout << "Loaded module\n";
     }
     catch (const c10::Error& e) {
@@ -61,7 +69,10 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
 
     timer.checkpoint("pass input to cuda");
+
+#ifndef __APPLE__
     input = input.to(at::kCUDA);
+#endif
 
     timer.checkpoint("flip");
     input = input.flip({0});
@@ -117,8 +128,11 @@ void DNRenderer::write(torch::Tensor& output, bool write) {
     output = output.to(torch::kUInt8);
     timer.checkpoint("make output contiguous");
     output = output.contiguous();
+
+#ifndef __APPLE__
     timer.checkpoint("to cpu");
     output = output.to(at::kCPU);
+#endif
 
     m_output = output;
 
