@@ -19,7 +19,12 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <unordered_set>
+
+#include <nlohmann/json.hpp>
+
 using namespace std;
+using json = nlohmann::json;
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
 
@@ -92,6 +97,30 @@ private:
         vector<unsigned int> indices;
         vector<Texture> textures;
 
+        std::ifstream agg_s("resources/scene/scene0000_00_vh_clean.aggregation.json");
+        json jagg = json::parse(agg_s);
+        std::vector<int> segs = jagg["segGroups"][32]["segments"];
+        std::ifstream seg_s("resources/scene/scene0000_00_vh_clean.segs.json");
+        json jseg = json::parse(seg_s);
+        std::vector<int> seg_indices = jseg["segIndices"];
+
+        std::cout << "size: jagg, jseg: " << segs.size() << ", " << seg_indices.size() << "\n";
+
+        std::sort(segs.begin(), segs.end());
+
+        std::unordered_set<int> ignore_indices;
+        for (size_t i = 0; i < seg_indices.size(); i++) {
+            if (std::find(segs.begin(), segs.end(), seg_indices[i]) != segs.end()) {
+                ignore_indices.insert(i);
+                //std::cout << "YES in segs: " << i << ", " << seg_indices[i] <<  "\n";
+            }
+            else {
+                //std::cout << "NOT in segs: " << i << ", " << seg_indices[i] <<  "\n";
+            }
+        }
+
+        std::cout << "Num ignored vertices: " << ignore_indices.size() << "\n";
+
         // walk through each of the mesh's vertices
         for(unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
@@ -162,13 +191,25 @@ private:
             vertices.push_back(vertex);
         }
         // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
+        std::cout << "starting add faces\n";
         for(unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
+            bool b_ignore_face = false;
             // retrieve all indices of the face and store them in the indices vector
-            for(unsigned int j = 0; j < face.mNumIndices; j++)
-                indices.push_back(face.mIndices[j]);
+            for(unsigned int j = 0; j < face.mNumIndices; j++) {
+                if(ignore_indices.find(face.mIndices[j]) != ignore_indices.end()) {
+                    b_ignore_face = true;
+                    break;
+                }
+            }
+            if (!b_ignore_face) {
+                for(unsigned int j = 0; j < face.mNumIndices; j++) {
+                    indices.push_back(face.mIndices[j]);
+                }
+            }
         }
+        std::cout << "finished add faces\n";
         // process materials
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
