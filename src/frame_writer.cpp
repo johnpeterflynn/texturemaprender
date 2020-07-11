@@ -8,12 +8,19 @@
 #include <gzip/compress.hpp>
 #include "stb_image_write.h"
 
-FrameWriter::FrameWriter(const std::string& output_path)
-    : m_output_path(output_path)
-
-{
+FrameWriter::FrameWriter() {
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_flip_vertically_on_write(true); // TODO: Why is this necessary?
+}
+
+FrameWriter::FrameWriter(const std::string& output_path)
+    : FrameWriter()
+{
+   setPath(output_path);
+}
+
+void FrameWriter::setPath(const std::string& output_path) {
+   m_output_path = output_path;
 }
 
 void FrameWriter::WriteAsTexcoord(const int id, const int height, const int width)

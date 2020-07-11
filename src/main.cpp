@@ -47,11 +47,15 @@ int num_processed_poses = 0;
 bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
 
+
 // deferred neural renderer
 int RENDER_HEIGHT = 512;//2*256;//SCR_HEIGHT;
 int RENDER_WIDTH = 512;//1296;//SCR_WIDTH;
 bool livemode = false;
 DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
+
+FrameWriter frameWriter;
+int num_snapshots = 0;
 
 int main(int argc, char *argv[])
 {
@@ -212,7 +216,7 @@ int run(std::string model_path, std::string poses_dir,
     // -----------
     Model ourModel(model_path);
 
-    FrameWriter frameWriter(output_path);
+    frameWriter.setPath(output_path);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -356,7 +360,7 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        writeFrameBuffer("", true);
+        frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
