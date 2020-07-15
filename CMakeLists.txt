@@ -43,5 +43,6 @@ target_link_libraries(
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
     ${TORCH_LIBRARIES}
+    ${CMAKE_DL_LIBS}
     )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
