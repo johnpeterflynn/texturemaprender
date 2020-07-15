@@ -271,8 +271,8 @@ int run(std::string model_path, std::string poses_dir,
         glm::mat4 projection = camera.GetProjectionMatrix(SCR_HEIGHT, SCR_WIDTH, 0.1f, 100.0f);
 
         // TODO: Use view matrix from camera
-        //glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        //glm::mat4 view = glm::mat4(1.0f);
 
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
@@ -300,7 +300,7 @@ int run(std::string model_path, std::string poses_dir,
         //glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
 
         if (livemode) {
-            writeFrameBuffer("", false);
+            frameWriter.RenderAsTexcoord(dnr, RENDER_HEIGHT, RENDER_WIDTH, false);
 
             // second pass
             glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -359,8 +359,10 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        frameWriter.RenderAsTexcoord(dnr, RENDER_HEIGHT, RENDER_WIDTH, true);
+        //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

@@ -143,7 +143,7 @@ void DNRenderer::write(torch::Tensor& output, bool write) {
         std::cout << "write shape: " << output.sizes() << "\n";
         uint8_t* data_out = m_output.data_ptr<uint8_t>();
         timer.checkpoint("write to file");
-        std::string filename = std::string("output/test") + std::to_string(index);
+        std::string filename = std::string("output/") + std::to_string(index);
         stbi_write_jpg((filename + ".jpg").c_str(), m_render_width, m_render_height, 3, data_out, 100);
         index++;
     }
