@@ -99,19 +99,21 @@ private:
 
         std::ifstream agg_s("resources/scene/scene0000_00_vh_clean.aggregation.json");
         json jagg = json::parse(agg_s);
-        std::vector<int> segs = jagg["segGroups"][32]["segments"];
+        std::vector<int> segs = jagg["segGroups"][7]["segments"];
         std::ifstream seg_s("resources/scene/scene0000_00_vh_clean.segs.json");
         json jseg = json::parse(seg_s);
         std::vector<int> seg_indices = jseg["segIndices"];
 
         std::cout << "size: jagg, jseg: " << segs.size() << ", " << seg_indices.size() << "\n";
 
-        std::sort(segs.begin(), segs.end());
+        //std::sort(segs.begin(), segs.end());
 
-        std::unordered_set<int> ignore_indices;
+        std::vector<int> move_indices;
+        std::unordered_set<int> move_indices_hash;
         for (size_t i = 0; i < seg_indices.size(); i++) {
             if (std::find(segs.begin(), segs.end(), seg_indices[i]) != segs.end()) {
-                ignore_indices.insert(i);
+                move_indices.push_back(i);
+                move_indices_hash.insert(i);
                 //std::cout << "YES in segs: " << i << ", " << seg_indices[i] <<  "\n";
             }
             else {
@@ -119,7 +121,7 @@ private:
             }
         }
 
-        std::cout << "Num ignored vertices: " << ignore_indices.size() << "\n";
+        std::cout << "Num moved vertices: " << move_indices.size() << "\n";
 
         // walk through each of the mesh's vertices
         for(unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -190,25 +192,62 @@ private:
 
             vertices.push_back(vertex);
         }
+
         // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
         std::cout << "starting add faces\n";
         for(unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
-            bool b_ignore_face = false;
+
             // retrieve all indices of the face and store them in the indices vector
             for(unsigned int j = 0; j < face.mNumIndices; j++) {
-                if(ignore_indices.find(face.mIndices[j]) != ignore_indices.end()) {
-                    b_ignore_face = true;
-                    break;
+                indices.push_back(face.mIndices[j]);
+            }
+        }
+
+        int count = 0;
+        for(unsigned int i = 0; i < mesh->mNumFaces; i++)
+        {
+            aiFace face = mesh->mFaces[i];
+
+            // retrieve all indices of the face and store them in the indices vector
+            //bool b_add = false;
+            int num_seg_verts = 0;
+
+            for(unsigned int j = 0; j < face.mNumIndices; j++) {
+                if(move_indices_hash.find(face.mIndices[j]) != move_indices_hash.end()) {
+                    //b_add = true;
+                    //break;
+                    num_seg_verts++;
                 }
             }
-            if (!b_ignore_face) {
+
+            //if (b_add) {
+            if (num_seg_verts == 3) {
                 for(unsigned int j = 0; j < face.mNumIndices; j++) {
-                    indices.push_back(face.mIndices[j]);
+                    auto it = std::find(move_indices.begin(), move_indices.end(), face.mIndices[j]);
+                    int index = std::distance(move_indices.begin(), it);
+                    indices.push_back(vertices.size() + index);//count);
+
+                    count++;
                 }
             }
         }
+
+        for(unsigned int i = 0; i < move_indices.size(); i++) {
+            Vertex vertex = vertices[move_indices[i]];
+
+
+            vertex.Position.x -= 0.5;
+            vertex.Position.y += 2;
+
+            vertices.push_back(vertex);
+        }
+
+
+
+
+
         std::cout << "finished add faces\n";
         // process materials
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
