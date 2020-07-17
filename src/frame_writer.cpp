@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-//#include <gzip/compress.hpp>
+#include <gzip/compress.hpp>
 #include "stb_image_write.h"
 
 FrameWriter::FrameWriter() {
@@ -64,11 +64,10 @@ void FrameWriter::WriteAsJpg(const int id, const int height, const int width) {
 void FrameWriter::CompressWriteFile(char *buf, int size,
                                       const std::string& filename)
 {
-    /*
     std::string compressed_data = gzip::compress(buf, size);
 
     auto myfile = std::fstream(filename + ".gz", std::ios::out | std::ios::binary);
     myfile.write(compressed_data.data(), compressed_data.size());
     myfile.close();
-    */
+
 }

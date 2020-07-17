@@ -10,6 +10,7 @@ include_directories(include)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
+find_package(ZLIB REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
 find_package(Torch REQUIRED)
@@ -44,5 +45,6 @@ target_link_libraries(
     ${Boost_SYSTEM_LIBRARY}
     ${TORCH_LIBRARIES}
     ${CMAKE_DL_LIBS}
+    ZLIB::ZLIB
     )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
