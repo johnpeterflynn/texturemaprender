@@ -95,10 +95,10 @@ private:
         vector<unsigned int> indices;
         vector<Texture> textures;
 
-        std::ifstream agg_s("resources/scan0/scene0000_00_vh_clean.aggregation.json");
+        std::ifstream agg_s("resources/scene/scene0000_00_vh_clean.aggregation.json");
         json jagg = json::parse(agg_s);
         std::vector<int> segs = jagg["segGroups"][7]["segments"];
-        std::ifstream seg_s("resources/scan0/scene0000_00_vh_clean.segs.json");
+        std::ifstream seg_s("resources/scene/scene0000_00_vh_clean.segs.json");
         json jseg = json::parse(seg_s);
         std::vector<int> seg_indices = jseg["segIndices"];
 
