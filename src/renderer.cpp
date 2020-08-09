@@ -2,11 +2,12 @@
 
 #include <glad/glad.h>
 
-Renderer::Renderer(int height, int width)
+Renderer::Renderer(int height, int width, const std::string &output_path)
     : m_height(height)
     , m_width(width)
     , m_uv_shader("src/vertexshader.vs", "src/fragmentshader.fs")
     , m_color_shader("src/vertexshadercolor.vs", "src/fragmentshadercolor.fs")
+    , m_frameWriter(output_path)
 {
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -63,7 +64,7 @@ Renderer::Renderer(int height, int width)
     glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::Draw(IScene& scene, Camera& camera) {
+void Renderer::Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile) {
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
@@ -102,6 +103,10 @@ void Renderer::Draw(IScene& scene, Camera& camera) {
     m_uv_shader.setMat4("model", model);
 
     scene.Draw(m_uv_shader);
+
+    if (writeToFile) {
+        m_frameWriter.WriteAsTexcoord(pose_id, m_height, m_width);
+    }
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default

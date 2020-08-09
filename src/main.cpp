@@ -10,7 +10,6 @@
 #include <boost/program_options.hpp>
 
 #include "cameraloader.h"
-#include "frame_writer.h"
 
 #include "camera.h"
 #include "deferred_neural_renderer.h"
@@ -54,7 +53,6 @@ int RENDER_WIDTH = SCR_WIDTH;//SCR_HEIGHT;//1296;//SCR_WIDTH;
 
 DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
 
-FrameWriter frameWriter;
 int num_snapshots = 0;
 
 int main(int argc, char *argv[])
@@ -147,14 +145,12 @@ int run(std::string model_path, std::string poses_dir,
     // load models
     // -----------
     Scene scene(model_path);
-    Renderer renderer(SCR_HEIGHT, SCR_WIDTH);
+    Renderer renderer(SCR_HEIGHT, SCR_WIDTH, output_path);
 
     // load camera poses, intrinsics and extrinsics
     // -----------------------------
     CameraLoader cam_loader(cam_params_dir, poses_dir);
     camera.setParams(cam_loader.m_intrinsics, cam_loader.m_extrinsics);
-
-    frameWriter.setPath(output_path);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -187,7 +183,7 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        renderer.draw(scene, camera);
+        renderer.Draw(scene, camera, num_processed_poses, false);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -228,7 +224,6 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        frameWriter.RenderAsTexcoord(dnr, RENDER_HEIGHT, RENDER_WIDTH, true);
         //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
     }
 }
