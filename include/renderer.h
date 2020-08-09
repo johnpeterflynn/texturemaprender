@@ -2,7 +2,7 @@
 #define RENDERER_H
 
 #include "camera.h"
-#include "model.h"
+#include "interfaces/iscene.h"
 #include "shader_s.h"
 
 class Renderer {
@@ -10,7 +10,7 @@ public:
     Renderer(int height, int width);
 
     // TODO: Make params const
-    void draw(Camera& camera, Model& model);
+    void Draw(IScene& scene, Camera& camera);
 
 private:
     const int m_height, m_width;

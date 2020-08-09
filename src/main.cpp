@@ -13,10 +13,10 @@
 #include "frame_writer.h"
 
 #include "camera.h"
-#include "model.h"
 #include "deferred_neural_renderer.h"
 
 #include "renderer.h"
+#include "scene.h"
 
 namespace po = boost::program_options;
 
@@ -144,17 +144,15 @@ int run(std::string model_path, std::string poses_dir,
 
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
 
+    // load models
+    // -----------
+    Scene scene(model_path);
     Renderer renderer(SCR_HEIGHT, SCR_WIDTH);
 
     // load camera poses, intrinsics and extrinsics
     // -----------------------------
     CameraLoader cam_loader(cam_params_dir, poses_dir);
     camera.setParams(cam_loader.m_intrinsics, cam_loader.m_extrinsics);
-
-
-    // load models
-    // -----------
-    Model ourModel(model_path);
 
     frameWriter.setPath(output_path);
 
@@ -189,7 +187,7 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        renderer.draw(camera, ourModel);
+        renderer.draw(scene, camera);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

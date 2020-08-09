@@ -63,7 +63,7 @@ Renderer::Renderer(int height, int width)
     glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::draw(Camera& camera, Model& scene) {
+void Renderer::Draw(IScene& scene, Camera& camera) {
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
@@ -80,16 +80,18 @@ void Renderer::draw(Camera& camera, Model& scene) {
 
     // view/projection transformations
     glm::mat4 projection = camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
+    //glm::mat4 projection = scene.GetProjectionMatrix();
 
     // TODO: Use view matrix from camera
     glm::mat4 view = camera.GetViewMatrix();
+    //glm::mat4 view = scene.GetViewMatrix();
     //glm::mat4 view = glm::mat4(1.0f);
 
     m_uv_shader.setMat4("projection", projection);
     m_uv_shader.setMat4("view", view);
 
     // render the loaded model
-    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 model = scene.GetModelMatrix();
 
     //if (!pose_processed) {
         //current_pose = cam_loader.getPose(num_processed_poses);
