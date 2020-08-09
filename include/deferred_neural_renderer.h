@@ -9,6 +9,7 @@
 
 class DNRenderer {
 public:
+    DNRenderer(int height, int width, const std::string& model_filename);
     DNRenderer(int height, int width);
 
     int load(const std::string& model_filename);

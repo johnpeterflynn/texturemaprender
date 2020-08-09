@@ -13,6 +13,12 @@
 
 namespace F = torch::nn::functional;
 
+DNRenderer::DNRenderer(int height, int width, const std::string& model_filename)
+    : DNRenderer(height, width)
+{
+    load(model_filename);
+}
+
 DNRenderer::DNRenderer(int height, int width)
     : m_render_height(height)
     , m_render_width(width)

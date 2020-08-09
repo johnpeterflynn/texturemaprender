@@ -2,12 +2,14 @@
 
 #include <glad/glad.h>
 
-Renderer::Renderer(int height, int width, const std::string &output_path)
+Renderer::Renderer(int height, int width, const std::string &net_path,
+                   const std::string &output_path)
     : m_height(height)
     , m_width(width)
     , m_uv_shader("src/vertexshader.vs", "src/fragmentshader.fs")
     , m_color_shader("src/vertexshadercolor.vs", "src/fragmentshadercolor.fs")
     , m_frameWriter(output_path)
+    , m_dnr(m_height, m_width, net_path)
 {
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);

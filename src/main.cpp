@@ -12,14 +12,15 @@
 #include "cameraloader.h"
 
 #include "camera.h"
-#include "deferred_neural_renderer.h"
 
 #include "renderer.h"
 #include "scene.h"
 
 namespace po = boost::program_options;
 
-int run(std::string model_path, std::string poses_dir, string cam_params_dir, std::string output_path);
+int run(std::string model_path, std::string poses_dir,
+        std::string cam_params_dir, std::string net_path,
+        std::string output_path);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -45,13 +46,6 @@ float lastPoseTime = 0.0f;
 int num_processed_poses = 0;
 bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
-
-
-// deferred neural renderer
-int RENDER_HEIGHT = SCR_HEIGHT;//SCR_HEIGHT;//2*256;//SCR_HEIGHT;
-int RENDER_WIDTH = SCR_WIDTH;//SCR_HEIGHT;//1296;//SCR_WIDTH;
-
-DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
 
 int num_snapshots = 0;
 
@@ -79,21 +73,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Init network model
-    if (vm.count("net")) {
-        dnr.load(vm["net"].as<std::string>());
-    }
-
     int r = run(vm["model"].as<std::string>(),
                 vm["poses"].as<std::string>(),
                 vm["cam-params"].as<std::string>(),
+                vm["net"].as<std::string>(),
                 vm["output-path"].as<std::string>());
 
     return r;
 }
 
 int run(std::string model_path, std::string poses_dir,
-        std::string cam_params_dir, std::string output_path)
+        std::string cam_params_dir, std::string net_path,
+        std::string output_path)
 {
     // glfw: initialize and configure
     // ------------------------------
@@ -145,7 +136,7 @@ int run(std::string model_path, std::string poses_dir,
     // load models
     // -----------
     Scene scene(model_path);
-    Renderer renderer(SCR_HEIGHT, SCR_WIDTH, output_path);
+    Renderer renderer(SCR_HEIGHT, SCR_WIDTH, net_path, output_path);
 
     // load camera poses, intrinsics and extrinsics
     // -----------------------------
