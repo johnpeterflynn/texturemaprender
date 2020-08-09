@@ -12,11 +12,11 @@
 #include "cameraloader.h"
 #include "frame_writer.h"
 
-#include "shader_s.h"
 #include "camera.h"
 #include "model.h"
 #include "deferred_neural_renderer.h"
 
+#include "renderer.h"
 
 namespace po = boost::program_options;
 
@@ -51,7 +51,7 @@ glm::mat4 current_pose = glm::mat4(1.0f);
 // deferred neural renderer
 int RENDER_HEIGHT = SCR_HEIGHT;//SCR_HEIGHT;//2*256;//SCR_HEIGHT;
 int RENDER_WIDTH = SCR_WIDTH;//SCR_HEIGHT;//1296;//SCR_WIDTH;
-bool livemode = true;
+
 DNRenderer dnr(RENDER_HEIGHT, RENDER_WIDTH);
 
 FrameWriter frameWriter;
@@ -142,75 +142,15 @@ int run(std::string model_path, std::string poses_dir,
         return -1;
     }
 
-    unsigned int framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    // generate texture
-    unsigned int texColorBuffer;
-    glGenTextures(1, &texColorBuffer);
-    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // attach it to currently bound framebuffer object
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "Framebuffer okay\n";
-     }else {
-        std::cout << "Framebuffer not okay\n";
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates. NOTE that this plane is now much smaller and at the top of the screen
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f,  -1.0f,  0.0f, 0.0f,
-         1.0f,  -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f,  -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-
-    // screen quad VAO
-    unsigned int quadVAO, quadVBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
     std::cout << "GL Version: " << glGetString(GL_VERSION) << "\n";
+
+    Renderer renderer(SCR_HEIGHT, SCR_WIDTH);
 
     // load camera poses, intrinsics and extrinsics
     // -----------------------------
     CameraLoader cam_loader(cam_params_dir, poses_dir);
     camera.setParams(cam_loader.m_intrinsics, cam_loader.m_extrinsics);
 
-    // configure global opengl state
-    // -----------------------------
-    glEnable(GL_DEPTH_TEST);
-
-    // build and compile shaders
-    // -------------------------
-    Shader ourShader("src/vertexshader.vs", "src/fragmentshader.fs");
-    Shader ourShaderFull("src/vertexshadercolor.vs", "src/fragmentshadercolor.fs");
 
     // load models
     // -----------
@@ -223,20 +163,9 @@ int run(std::string model_path, std::string poses_dir,
 
     // render loop
     // -----------
-    GLchar* data = new GLchar[SCR_HEIGHT * SCR_WIDTH * 3];
-    for(int i = 0; i < SCR_HEIGHT * SCR_WIDTH * 3; i++) {
-        data[i] = 255;
-    }
 
     while (!glfwWindowShouldClose(window))
     {
-        if (livemode) {
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-            glEnable(GL_DEPTH_TEST);
-        }
-
         //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         // pose rate logic
         // --------------------
@@ -260,65 +189,7 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        //glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // don't forget to enable shader before setting uniforms
-        ourShader.use();
-
-        // view/projection transformations
-        glm::mat4 projection = camera.GetProjectionMatrix(SCR_HEIGHT, SCR_WIDTH, 0.1f, 100.0f);
-
-        // TODO: Use view matrix from camera
-        glm::mat4 view = camera.GetViewMatrix();
-        //glm::mat4 view = glm::mat4(1.0f);
-
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
-
-        // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-
-        if (!pose_processed) {
-            //current_pose = cam_loader.getPose(num_processed_poses);
-        }
-        // TODO: Don't invert every time
-        //glm::mat4 model = glm::inverse(current_pose);
-
-        ourShader.setMat4("model", model);
-
-        ourModel.Draw(ourShader);
-        //glDrawBuffer(GL_BACK);
-        //glDrawPixels(SCR_HEIGHT, SCR_WIDTH, GL_RGB, GL_FLOAT, data);
-        //glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-
-        //glLoadIdentity();
-        //glRasterPos2i(0, 0);
-
-        //glReadBuffer(GL_FRONT);
-        //glReadPixels(0, 0, SCR_WIDTH, SCR_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-        if (livemode) {
-            frameWriter.RenderAsTexcoord(dnr, RENDER_HEIGHT, RENDER_WIDTH, false);
-
-            // second pass
-            glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-            glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            ourShaderFull.use();
-            glBindVertexArray(quadVAO);
-            glDisable(GL_DEPTH_TEST);
-            glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-            uint8_t* data_out = dnr.m_output.data_ptr<uint8_t>();
-
-            glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
-
-
-
+        renderer.draw(camera, ourModel);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -326,17 +197,16 @@ int run(std::string model_path, std::string poses_dir,
         glfwPollEvents();
 
         // Write out framebuffers
-        if (!pose_processed) {
-            frameWriter.WriteAsTexcoord(num_processed_poses,
-                                        SCR_HEIGHT, SCR_WIDTH);
-        }
+        //if (!pose_processed) {
+            //frameWriter.WriteAsTexcoord(num_processed_poses,
+            //                            SCR_HEIGHT, SCR_WIDTH);
+        //}
 
         if (!pose_processed) {
             pose_processed = true;
             num_processed_poses++;
         }
     }
-    delete[] data;
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
