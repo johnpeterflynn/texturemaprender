@@ -87,7 +87,7 @@ public:
         auto projection = glm::frustum(left, right, bottom, top, near, far);
 
         // TODO: Build this rotation into the construction of the frustum
-        //projection = glm::rotate(projection, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        projection = glm::rotate(projection, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
         return projection;
     }

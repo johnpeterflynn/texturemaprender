@@ -66,7 +66,8 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile) {
+void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
+                    int pose_id, bool writeToFile) {
     // render
     // ------
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -85,21 +86,18 @@ void Renderer::Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile
     //glm::mat4 projection = scene.GetProjectionMatrix();
 
     // TODO: Use view matrix from camera
-    glm::mat4 view = camera.GetViewMatrix();
+    //glm::mat4 view = camera.GetViewMatrix();
     //glm::mat4 view = scene.GetViewMatrix();
-    //glm::mat4 view = glm::mat4(1.0f);
+    glm::mat4 view = glm::mat4(1.0f);
 
     m_uv_shader.setMat4("projection", projection);
     m_uv_shader.setMat4("view", view);
 
     // render the loaded model
-    glm::mat4 model = scene.GetModelMatrix();
+    //glm::mat4 model = scene.GetModelMatrix();
 
-    //if (!pose_processed) {
-        //current_pose = cam_loader.getPose(num_processed_poses);
-    //}
     // TODO: Don't invert every time
-    //glm::mat4 model = glm::inverse(current_pose);
+    glm::mat4 model = glm::inverse(pose);
 
     m_uv_shader.setMat4("model", model);
 

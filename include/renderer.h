@@ -13,7 +13,8 @@ public:
              const std::string &output_path);
 
     // TODO: Make params const
-    void Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile);
+    void Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
+              int pose_id, bool writeToFile);
 
 private:
     const int m_height, m_width;

@@ -151,19 +151,9 @@ int run(std::string model_path, std::string poses_dir,
     // render loop
     // -----------
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window)
+           && num_processed_poses < cam_loader.getNumPoses())
     {
-        //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        // pose rate logic
-        // --------------------
-        //float currentPoseTime = glfwGetTime();
-        //if (true || (currentPoseTime - lastPoseTime > POSES_PERIOD_SEC &&
-        //        num_processed_poses < cam_loader.getNumPoses())) {
-            pose_processed = false;
-        //    lastPoseTime = currentPoseTime;
-        //}
-
-
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
@@ -176,23 +166,15 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        renderer.Draw(scene, camera, num_processed_poses, write_coords);
+        renderer.Draw(scene, camera, cam_loader.getPose(num_processed_poses),
+                      num_processed_poses, write_coords);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        // Write out framebuffers
-        //if (!pose_processed) {
-            //frameWriter.WriteAsTexcoord(num_processed_poses,
-            //                            SCR_HEIGHT, SCR_WIDTH);
-        //}
-
-        if (!pose_processed) {
-            pose_processed = true;
-            num_processed_poses++;
-        }
+        num_processed_poses++;
     }
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
