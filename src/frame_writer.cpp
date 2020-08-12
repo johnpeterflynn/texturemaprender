@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <gzip/compress.hpp>
-#include "stb_image_write.h"
+#include "stb/stb_image_write.h"
 
 FrameWriter::FrameWriter() {
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).

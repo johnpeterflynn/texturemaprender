@@ -6,8 +6,8 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path)
     : m_height(height)
     , m_width(width)
-    , m_uv_shader("src/vertexshader.vs", "src/fragmentshader.fs")
-    , m_color_shader("src/vertexshadercolor.vs", "src/fragmentshadercolor.fs")
+    , m_uv_shader("src/shaders/vertexshader.vs", "src/shaders/fragmentshader.fs")
+    , m_color_shader("src/shaders/vertexshadercolor.vs", "src/shaders/fragmentshadercolor.fs")
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
 {
