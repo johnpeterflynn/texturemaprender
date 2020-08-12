@@ -24,12 +24,13 @@ void FrameWriter::setPath(const std::string& output_path) {
 }
 
 void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool writeout) {
+    int channels = 3;
     // TODO: Allocate and deallocate heap_data only once
-    float *heap_data = new float[height * width * 2];
+    float *heap_data = new float[height * width * channels];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
 
     dnr.render(heap_data, height, width, writeout);
 
@@ -38,27 +39,31 @@ void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool 
 
 void FrameWriter::WriteAsTexcoord(const int id, const int height, const int width)
 {
+   int channels = 3;
    // TODO: Allocate and deallocate heap_data only once
-   float *heap_data = new float[height * width * 2];
+   float *heap_data = new float[height * width * channels];
    std::string file_path = (m_output_path / std::to_string(id)).string();
 
    glReadBuffer(GL_FRONT);
-   glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
+   glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
 
-   CompressWriteFile((char*)heap_data, height * width * 2 * 4, file_path);
+   CompressWriteFile((char*)heap_data,
+                     height * width * channels * sizeof(float),
+                     file_path);
 
    delete [] heap_data;
 }
 
 void FrameWriter::WriteAsJpg(const int id, const int height, const int width) {
-    GLchar data[height * width * 3]; // # pixels x # floats per pixel
+    int num_jpg_channels = 3;
+    GLchar data[height * width * num_jpg_channels]; // # pixels x # floats per pixel
     std::string file_path = (m_output_path / std::to_string(id)).string() + ".jpg";
 
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     // 90% quality, could be less
-    stbi_write_jpg(file_path.c_str(), width, height, 3, data, 90);
+    stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 90);
 }
 
 void FrameWriter::CompressWriteFile(char *buf, int size,

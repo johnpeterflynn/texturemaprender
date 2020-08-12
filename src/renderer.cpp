@@ -67,15 +67,14 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
 }
 
 void Renderer::Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile) {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-    glEnable(GL_DEPTH_TEST);
-
     // render
     // ------
-    glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-    //glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+    glEnable(GL_DEPTH_TEST);
+    // The depth (z component) of any screen space coordinates should be >0 for
+    //  visible fragments. Make sure background color is set to 0.0 so that
+    //  neural textures can ignore them
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // don't forget to enable shader before setting uniforms
@@ -112,7 +111,7 @@ void Renderer::Draw(IScene& scene, Camera& camera, int pose_id, bool writeToFile
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-    glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_color_shader.use();

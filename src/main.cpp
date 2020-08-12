@@ -20,7 +20,7 @@ namespace po = boost::program_options;
 
 int run(std::string model_path, std::string poses_dir,
         std::string cam_params_dir, std::string net_path,
-        std::string output_path);
+        std::string output_path, bool write_coords);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
         ("net", po::value<std::string>(), "path to deferred neural renderer network model weights")
         ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
+        ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
     ;
 
     po::variables_map vm;
@@ -77,14 +78,15 @@ int main(int argc, char *argv[])
                 vm["poses"].as<std::string>(),
                 vm["cam-params"].as<std::string>(),
                 vm["net"].as<std::string>(),
-                vm["output-path"].as<std::string>());
+                vm["output-path"].as<std::string>(),
+                vm["write-coords"].as<bool>());
 
     return r;
 }
 
 int run(std::string model_path, std::string poses_dir,
         std::string cam_params_dir, std::string net_path,
-        std::string output_path)
+        std::string output_path, bool write_coords)
 {
     // glfw: initialize and configure
     // ------------------------------
@@ -174,7 +176,7 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        renderer.Draw(scene, camera, num_processed_poses, false);
+        renderer.Draw(scene, camera, num_processed_poses, write_coords);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
