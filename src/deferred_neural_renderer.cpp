@@ -1,6 +1,6 @@
 #include "deferred_neural_renderer.h"
 
-#include "stb_image_write.h"
+#include "stb/stb_image_write.h"
 
 #include "timer.h"
 
