@@ -21,6 +21,8 @@ struct Vertex {
     //glm::vec3 Normal;
     // texCoords
     glm::vec2 TexCoords;
+    // vertColor
+    glm::vec4 Colors;
     // tangent
     //glm::vec3 Tangent;
     // bitangent
@@ -120,7 +122,9 @@ private:
         // vertex texture coords
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
-
+        // vertex texture coords
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Colors));
         // vertex normals
         //glEnableVertexAttribArray(1);
         //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));

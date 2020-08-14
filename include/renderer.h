@@ -21,6 +21,7 @@ private:
 
     Shader m_uv_shader;
     Shader m_color_shader;
+    Shader m_texture_shader;
 
     FrameWriter m_frameWriter;
 

@@ -157,7 +157,22 @@ private:
             }
             else {
                 vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-                std::cout << "Warning: Mesh does not contain texture coordinates\n";
+                //std::cout << "Warning: Mesh does not contain texture coordinates\n";
+            }
+
+            if(mesh->mColors[0])
+            {
+                glm::vec4 vec;
+                // Add vertex colors if they exist
+                vec[0] = mesh->mColors[0][i].r;
+                vec[1] = mesh->mColors[0][i].g;
+                vec[2] = mesh->mColors[0][i].b;
+                vec[3] = mesh->mColors[0][i].a;
+                vertex.Colors = vec;
+            }
+            else {
+                vertex.Colors = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                //std::cout << "Warning: Mesh does not contain vertex colors\n";
             }
             /*
             // tangent

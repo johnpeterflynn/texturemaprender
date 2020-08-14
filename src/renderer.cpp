@@ -6,8 +6,9 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path)
     : m_height(height)
     , m_width(width)
-    , m_uv_shader("src/shaders/vertexshader.vs", "src/shaders/fragmentshader.fs")
-    , m_color_shader("src/shaders/vertexshadercolor.vs", "src/shaders/fragmentshadercolor.fs")
+    , m_uv_shader("src/shaders/vertexshader_texcoord.vs", "src/shaders/fragmentshader_texcoord.fs")
+    , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
+    , m_texture_shader("src/shaders/vertexshader_texture.vs", "src/shaders/fragmentshader_texture.fs")
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
 {
@@ -112,7 +113,7 @@ void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    m_color_shader.use();
+    m_texture_shader.use();
     glBindVertexArray(m_quadVAO);
     glDisable(GL_DEPTH_TEST);
     glBindTexture(GL_TEXTURE_2D, m_texColorBuffer);
