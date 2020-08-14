@@ -24,13 +24,13 @@ void FrameWriter::setPath(const std::string& output_path) {
 }
 
 void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool writeout) {
-    int channels = 3;
+    int channels = 2;
     // TODO: Allocate and deallocate heap_data only once
     float *heap_data = new float[height * width * channels];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
+    glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
 
     dnr.render(heap_data, height, width, writeout);
 
@@ -39,13 +39,13 @@ void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool 
 
 void FrameWriter::WriteAsTexcoord(const int id, const int height, const int width)
 {
-   int channels = 3;
+   int channels = 2;
    // TODO: Allocate and deallocate heap_data only once
    float *heap_data = new float[height * width * channels];
    std::string file_path = (m_output_path / std::to_string(id)).string();
 
    glReadBuffer(GL_FRONT);
-   glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
+   glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
 
    CompressWriteFile((char*)heap_data,
                      height * width * channels * sizeof(float),
