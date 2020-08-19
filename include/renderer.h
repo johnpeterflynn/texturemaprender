@@ -14,7 +14,7 @@ public:
 
     // TODO: Make params const
     void Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
-              int pose_id, bool writeToFile);
+              int pose_id, bool free_mode, bool writeToFile);
 
 private:
     const int m_height, m_width;

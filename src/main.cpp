@@ -49,6 +49,8 @@ glm::mat4 current_pose = glm::mat4(1.0f);
 
 int num_snapshots = 0;
 
+bool free_mode = true;
+
 int main(int argc, char *argv[])
 {
     // Declare required options.
@@ -60,6 +62,7 @@ int main(int argc, char *argv[])
         ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
+        ("free-mode", po::value<bool>()->default_value(free_mode), "allow free moving camera")
     ;
 
     po::variables_map vm;
@@ -73,6 +76,8 @@ int main(int argc, char *argv[])
         std::cout << required << "\n";
         return 1;
     }
+
+    free_mode = vm["free-mode"].as<bool>();
 
     int r = run(vm["model"].as<std::string>(),
                 vm["poses"].as<std::string>(),
@@ -167,14 +172,16 @@ int run(std::string model_path, std::string poses_dir,
         // render
         // ------
         renderer.Draw(scene, camera, cam_loader.getPose(num_processed_poses),
-                      num_processed_poses, write_coords);
+                      num_processed_poses, free_mode, write_coords);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        num_processed_poses++;
+        if (!free_mode) {
+            num_processed_poses++;
+        }
     }
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
@@ -200,6 +207,9 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
+    }
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        free_mode = !free_mode;
     }
 }
 

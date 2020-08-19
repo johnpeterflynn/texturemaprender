@@ -68,7 +68,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
 }
 
 void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
-                    int pose_id, bool writeToFile) {
+                    int pose_id, bool free_mode, bool writeToFile) {
     // render
     // ------
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -83,22 +83,29 @@ void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
     m_uv_shader.use();
 
     // view/projection transformations
-    glm::mat4 projection = camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
     //glm::mat4 projection = scene.GetProjectionMatrix();
+    glm::mat4 projection = camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
 
     // TODO: Use view matrix from camera
-    //glm::mat4 view = camera.GetViewMatrix();
     //glm::mat4 view = scene.GetViewMatrix();
     glm::mat4 view = glm::mat4(1.0f);
+    if (free_mode) {
+        view = camera.GetViewMatrix();
+    }
+    view = view * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
     m_uv_shader.setMat4("projection", projection);
     m_uv_shader.setMat4("view", view);
 
     // render the loaded model
     //glm::mat4 model = scene.GetModelMatrix();
-
-    // TODO: Don't invert every time
-    glm::mat4 model = glm::inverse(pose);
+    glm::mat4 model = glm::mat4(1.0f);
+    if (!free_mode) {
+        // Rotate to make +Z the up direction as often defined by 3D scans
+        model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                            glm::vec3(1.0f, 0.0f, 0.0f))
+                * glm::inverse(pose);
+    }
 
     m_uv_shader.setMat4("model", model);
 

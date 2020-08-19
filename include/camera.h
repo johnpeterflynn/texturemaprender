@@ -86,9 +86,6 @@ public:
 
         auto projection = glm::frustum(left, right, bottom, top, near, far);
 
-        // TODO: Build this rotation into the construction of the frustum
-        projection = glm::rotate(projection, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
         return projection;
     }
 
@@ -98,10 +95,6 @@ public:
     glm::mat4 GetViewMatrix()
     {
         glm::mat4 view = glm::lookAt(Position, Position + Front, Up);
-
-        // Rotate to make +Z the up direction as often defined by 3D scans
-        // TODO: Verify and account for this elsewhere.
-        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
         // TODO: Does extrinsics need to be inverted?
         view = m_extrinsics * view;
