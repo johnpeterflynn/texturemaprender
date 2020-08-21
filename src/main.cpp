@@ -12,6 +12,7 @@
 #include "cameraloader.h"
 
 #include "camera.h"
+#include "keyhandler.h"
 
 #include "renderer.h"
 #include "scene.h"
@@ -50,6 +51,8 @@ glm::mat4 current_pose = glm::mat4(1.0f);
 int num_snapshots = 0;
 
 bool free_mode = true;
+
+KeyHandler key_handler;
 
 int main(int argc, char *argv[])
 {
@@ -196,6 +199,8 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    key_handler.ProcessKeystroke(window, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
