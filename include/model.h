@@ -131,19 +131,19 @@ private:
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
 
-            /*
+
             // normals
-            if(mesh->mNormals[0]) {
+            //if(mesh->mNormals[0]) {
                 vector.x = mesh->mNormals[i].x;
                 vector.y = mesh->mNormals[i].y;
                 vector.z = mesh->mNormals[i].z;
                 vertex.Normal = vector;
-            }
-            else {
-                vertex.Normal = glm::vec3(0.0f, 0.0f, 0.0f);
-                std::cout << "Warning: Mesh does not contain normals\n";
-            }
-            */
+            //}
+            //else {
+            //    vertex.Normal = glm::vec3(0.0f, 0.0f, 0.0f);
+                //std::cout << "Warning: Mesh does not contain normals\n";
+            //}
+
 
             // texture coordinates
             if(mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
