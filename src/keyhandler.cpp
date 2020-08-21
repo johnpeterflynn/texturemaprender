@@ -1,6 +1,10 @@
 #include "keyhandler.h"
 
-KeyHandler::KeyHandler() {
+KeyHandler::KeyHandler(int screen_height, int screen_width)
+    : m_first_mouse(true)
+    , m_lastX(screen_width / 2.0)
+    , m_lastY(screen_height / 2.0)
+{
 
 }
 
@@ -30,11 +34,51 @@ void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
         key = KeyListener::Key::C;
 
-    NotifyAll(key, deltaTime);
+    NotifyAllKeys(key, deltaTime);
 }
 
-void KeyHandler::NotifyAll(KeyListener::Key key, float deltaTime) {
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void KeyHandler::MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (m_first_mouse)
+    {
+        m_lastX = xpos;
+        m_lastY = ypos;
+        m_first_mouse = false;
+    }
+
+    float xoffset = xpos - m_lastX;
+    float yoffset = m_lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    m_lastX = xpos;
+    m_lastY = ypos;
+
+   // camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void KeyHandler::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    //camera.ProcessMouseScroll(yoffset);
+}
+
+
+void KeyHandler::NotifyAllKeys(KeyListener::Key key, float deltaTime) {
     for (auto & observer : m_observers) {
-        observer->Notify(key, deltaTime);
+        observer->NotifyKeys(key, deltaTime);
+    }
+}
+
+void KeyHandler::NotifyAllMouse(double xoffset, double yoffset) {
+    for (auto & observer : m_observers) {
+        observer->NotifyMouse(xoffset, yoffset);
+    }
+}
+
+void KeyHandler::NotifyAllScroll(double yoffset) {
+    for (auto & observer : m_observers) {
+        observer->NotifyScroll(yoffset);
     }
 }

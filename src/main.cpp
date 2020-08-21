@@ -52,7 +52,7 @@ int num_snapshots = 0;
 
 bool free_mode = true;
 
-KeyHandler key_handler;
+KeyHandler key_handler(SCR_HEIGHT, SCR_WIDTH);
 
 int main(int argc, char *argv[])
 {
