@@ -18,23 +18,18 @@ void KeyHandler::Unsubscribe(KeyListener &listener) {
 
 void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
 {
-    KeyListener::Key key;
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        key = KeyListener::Key::W;
+        NotifyAllKeys(KeyListener::Key::W, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        key = KeyListener::Key::S;
+        NotifyAllKeys(KeyListener::Key::S, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        key = KeyListener::Key::A;
+        NotifyAllKeys(KeyListener::Key::A, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        key = KeyListener::Key::D;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        key = KeyListener::Key::SPACE;
-    }
+        NotifyAllKeys(KeyListener::Key::D, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::SPACE, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
-        key = KeyListener::Key::C;
-
-    NotifyAllKeys(key, deltaTime);
+        NotifyAllKeys(KeyListener::Key::C, deltaTime);
 }
 
 // glfw: whenever the mouse moves, this callback is called
