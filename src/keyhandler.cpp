@@ -49,14 +49,14 @@ void KeyHandler::MouseCallback(GLFWwindow* window, double xpos, double ypos)
     m_lastX = xpos;
     m_lastY = ypos;
 
-   // camera.ProcessMouseMovement(xoffset, yoffset);
+   NotifyAllMouse(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void KeyHandler::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    //camera.ProcessMouseScroll(yoffset);
+    NotifyAllScroll(yoffset);
 }
 
 
