@@ -12,6 +12,7 @@ Scene::Scene(std::string const &model_path,
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
 }
 
+/*
 glm::mat4 Scene::GetProjectionMatrix() {
     return glm::mat4(1.0f);
 }
@@ -23,6 +24,7 @@ glm::mat4 Scene::GetViewMatrix() {
 glm::mat4 Scene::GetModelMatrix() {
     return glm::mat4(1.0f);
 }
+*/
 
 void Scene::Draw(Shader& shader) {
     m_model.Draw(shader);

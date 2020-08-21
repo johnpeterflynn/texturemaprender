@@ -162,8 +162,7 @@ int run(std::string model_path, std::string poses_dir,
 
         // render
         // ------
-        renderer.Draw(scene, scene.m_camera, scene.m_cam_loader.getPose(num_processed_poses),
-                      num_processed_poses, free_mode, write_coords);
+        renderer.Draw(scene, num_processed_poses, free_mode, write_coords);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

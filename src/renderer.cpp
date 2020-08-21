@@ -67,8 +67,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
-                    int pose_id, bool free_mode, bool writeToFile) {
+void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile) {
     // render
     // ------
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -83,14 +82,14 @@ void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
     m_uv_shader.use();
 
     // view/projection transformations
-    //glm::mat4 projection = scene.GetProjectionMatrix();
-    glm::mat4 projection = camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
+    // TODO: Make m_camera private
+    glm::mat4 projection = scene.m_camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
 
     // TODO: Use view matrix from camera
-    //glm::mat4 view = scene.GetViewMatrix();
     glm::mat4 view = glm::mat4(1.0f);
     if (free_mode) {
-        view = camera.GetViewMatrix();
+        // TODO: Make m_camera private
+        view = scene.m_camera.GetViewMatrix();
     }
     view = view * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
@@ -101,10 +100,11 @@ void Renderer::Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
     //glm::mat4 model = scene.GetModelMatrix();
     glm::mat4 model = glm::mat4(1.0f);
     if (!free_mode) {
+        // TODO: Make m_camera_loader private
         // Rotate to make +Z the up direction as often defined by 3D scans
         model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
                             glm::vec3(1.0f, 0.0f, 0.0f))
-                * glm::inverse(pose);
+                * glm::inverse(scene.m_cam_loader.getPose(pose_id));
     }
 
     m_uv_shader.setMat4("model", model);

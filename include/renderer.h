@@ -4,7 +4,8 @@
 #include "camera.h"
 #include "deferred_neural_renderer.h"
 #include "frame_writer.h"
-#include "interfaces/iscene.h"
+//#include "interfaces/iscene.h"
+#include "scene.h"
 #include "shader_s.h"
 
 class Renderer {
@@ -13,8 +14,7 @@ public:
              const std::string &output_path);
 
     // TODO: Make params const
-    void Draw(IScene& scene, Camera& camera, const glm::mat4& pose,
-              int pose_id, bool free_mode, bool writeToFile);
+    void Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile);
 
 private:
     const int m_height, m_width;
