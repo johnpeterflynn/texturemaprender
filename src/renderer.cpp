@@ -11,6 +11,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_texture_shader("src/shaders/vertexshader_texture.vs", "src/shaders/fragmentshader_texture.fs")
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
+    , m_b_snapshot(false)
 {
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -115,6 +116,11 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
         m_frameWriter.WriteAsTexcoord(pose_id, m_height, m_width);
     }
 
+    if (m_b_snapshot) {
+        m_frameWriter.RenderAsTexcoord(m_dnr, m_height, m_width, true);
+        m_b_snapshot = false;
+    }
+
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -128,4 +134,12 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     //glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void Renderer::NotifyKeys(Key key, float deltaTime) {
+    switch(key) {
+     case Key::SPACE:
+        m_b_snapshot = true;
+        break;
+    }
 }

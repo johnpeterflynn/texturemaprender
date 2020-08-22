@@ -140,6 +140,7 @@ int run(std::string model_path, std::string poses_dir,
     Renderer renderer(SCR_HEIGHT, SCR_WIDTH, net_path, output_path);
 
     key_handler.Subscribe(scene);
+    key_handler.Subscribe(renderer);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -175,6 +176,7 @@ int run(std::string model_path, std::string poses_dir,
     }
 
     key_handler.Unsubscribe(scene);
+    key_handler.Unsubscribe(renderer);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
