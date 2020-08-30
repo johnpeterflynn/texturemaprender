@@ -30,6 +30,10 @@ void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
         NotifyAllKeys(KeyListener::Key::SPACE, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
         NotifyAllKeys(KeyListener::Key::C, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::LEFT_SHIFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::P, deltaTime);
 }
 
 // glfw: whenever the mouse moves, this callback is called

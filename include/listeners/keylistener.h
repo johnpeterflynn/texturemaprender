@@ -4,7 +4,7 @@
 class KeyListener {
 public:
     enum class Key {
-        A, C, D, S, W, SPACE
+        A, C, D, P, S, W, SPACE, LEFT_SHIFT
     };
 
     virtual void NotifyKeys(Key key, float deltaTime) = 0;

@@ -44,8 +44,11 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
      case Key::D:
         m_camera.ProcessKeyboard(RIGHT, deltaTime);
         break;
-      case Key::SPACE:
-        //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
+     case Key::SPACE:
+        m_camera.ProcessKeyboard(UP, deltaTime);
+        break;
+     case Key::LEFT_SHIFT:
+        m_camera.ProcessKeyboard(DOWN, deltaTime);
         break;
     }
 }

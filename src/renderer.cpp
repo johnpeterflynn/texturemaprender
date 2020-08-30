@@ -138,7 +138,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
 void Renderer::NotifyKeys(Key key, float deltaTime) {
     switch(key) {
-     case Key::SPACE:
+     case Key::P:
         m_b_snapshot = true;
         break;
     }
