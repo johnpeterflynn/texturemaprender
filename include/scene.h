@@ -5,12 +5,19 @@
 #include "listeners/keylistener.h"
 #include "camera.h"
 #include "cameraloader.h"
-#include "model.h"
+#include "scenemodel.h"
 
 class Scene : /*public IScene,*/ public KeyListener {
 public:
-    Scene(std::string const &model_path, std::string const &cam_params_dir,
-          std::string const &poses_dir);
+    struct Params {
+        std::string model_path;
+        std::string aggregation_path;
+        std::string segs_path;
+        std::string cam_params_dir;
+        std::string poses_dir;
+
+    };
+    Scene(const Params &params);
 
     /*virtual*/ glm::mat4 GetProjectionMatrix();
     /*virtual*/ glm::mat4 GetViewMatrix();
@@ -27,7 +34,7 @@ private:
     void NotifyMouse(double xoffset, double yoffset);
     void NotifyScroll(double yoffset);
 
-    Model m_model;
+    SceneModel m_model;
 };
 
 #endif // SCENE_H

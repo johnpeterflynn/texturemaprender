@@ -2,12 +2,10 @@
 
 #include <glm/glm.hpp>
 
-Scene::Scene(std::string const &model_path,
-             std::string const &cam_params_dir,
-             std::string const &poses_dir)
+Scene::Scene(const Scene::Params &params)
     : m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
-    , m_cam_loader(cam_params_dir, poses_dir)
-    , m_model(model_path)
+    , m_cam_loader(params.cam_params_dir, params.poses_dir)
+    , m_model(params.model_path, params.aggregation_path, params.segs_path)
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
 }

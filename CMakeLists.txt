@@ -34,7 +34,8 @@ set(SOURCES
     src/stb_image.cpp
     src/stb_image_write.cpp
     src/glad.c
-    src/scene.cpp)
+    src/scene.cpp
+    src/scenemodel.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})

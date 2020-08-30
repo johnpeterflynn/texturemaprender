@@ -16,8 +16,7 @@
 
 namespace po = boost::program_options;
 
-int run(std::string model_path, std::string poses_dir,
-        std::string cam_params_dir, std::string net_path,
+int run(const Scene::Params &params, std::string net_path,
         std::string output_path, bool write_coords);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -51,6 +50,8 @@ int main(int argc, char *argv[])
     po::options_description required("Required options");
     required.add_options()
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
+        ("agg-path", po::value<std::string>(), "path to aggregation file containing seg groups for each model vertex")
+        ("segs-path", po::value<std::string>(), "path to segmentation file containing seg groups for each semantic object")
         ("poses", po::value<std::string>(), "path to directory of camera poses (space separated .txt files)")
         ("net", po::value<std::string>(), "path to deferred neural renderer network model weights")
         ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
@@ -73,9 +74,14 @@ int main(int argc, char *argv[])
 
     free_mode = vm["free-mode"].as<bool>();
 
-    int r = run(vm["model"].as<std::string>(),
-                vm["poses"].as<std::string>(),
-                vm["cam-params"].as<std::string>(),
+    Scene::Params scene_params;
+    scene_params.model_path = vm["model"].as<std::string>();
+    scene_params.aggregation_path = vm["agg-path"].as<std::string>();
+    scene_params.segs_path = vm["segs-path"].as<std::string>();
+    scene_params.cam_params_dir = vm["cam-params"].as<std::string>();
+    scene_params.poses_dir = vm["poses"].as<std::string>();
+
+    int r = run(scene_params,
                 vm["net"].as<std::string>(),
                 vm["output-path"].as<std::string>(),
                 vm["write-coords"].as<bool>());
@@ -83,8 +89,7 @@ int main(int argc, char *argv[])
     return r;
 }
 
-int run(std::string model_path, std::string poses_dir,
-        std::string cam_params_dir, std::string net_path,
+int run(const Scene::Params &scene_params, std::string net_path,
         std::string output_path, bool write_coords)
 {
     // glfw: initialize and configure
@@ -136,7 +141,7 @@ int run(std::string model_path, std::string poses_dir,
 
     // load models
     // -----------
-    Scene scene(model_path, cam_params_dir, poses_dir);
+    Scene scene(scene_params);
     Renderer renderer(SCR_HEIGHT, SCR_WIDTH, net_path, output_path);
 
     key_handler.Subscribe(scene);
