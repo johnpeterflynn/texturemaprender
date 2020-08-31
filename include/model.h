@@ -135,16 +135,16 @@ private:
 
 
             // normals
-            //if(mesh->mNormals[0]) {
+            if(mesh->mNormals) {
                 vector.x = mesh->mNormals[i].x;
                 vector.y = mesh->mNormals[i].y;
                 vector.z = mesh->mNormals[i].z;
                 vertex.Normal = vector;
-            //}
-            //else {
-            //    vertex.Normal = glm::vec3(0.0f, 0.0f, 0.0f);
+            }
+            else {
+                vertex.Normal = glm::vec3(0.0f, 0.0f, 0.0f);
                 //std::cout << "Warning: Mesh does not contain normals\n";
-            //}
+            }
 
 
             // texture coordinates
