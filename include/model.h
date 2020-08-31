@@ -93,11 +93,13 @@ private:
         vector<Vertex> vertices;
         vector<unsigned int> indices;
         vector<Texture> textures;
-
+/*
         std::ifstream agg_s("resources/scan0/scene0000_00_vh_clean.aggregation.json");
         json jagg = json::parse(agg_s);
+        // 35 - table near chair. move to (-0.6, -1, 0)
+        // 12 - trash can by fridge. move to (0.13, -0.4, 0)
         std::vector<int> segs = jagg["segGroups"][7]["segments"];
-        std::ifstream seg_s("resources/scan0/scene0000_00_vh_clean.segs.json");
+        std::ifstream seg_s("resources/scan0/scene0000_00_vh_clean_smartuv_75_0_0_no_aspect.segs.json");
         json jseg = json::parse(seg_s);
         std::vector<int> seg_indices = jseg["segIndices"];
 
@@ -119,7 +121,7 @@ private:
         }
 
         std::cout << "Num moved vertices: " << move_indices.size() << "\n";
-
+*/
         // walk through each of the mesh's vertices
         for(unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
@@ -206,17 +208,28 @@ private:
         }
 
         // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
-        std::cout << "starting add faces\n";
         for(unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
+            bool b_delete_face = false;
 
-            // retrieve all indices of the face and store them in the indices vector
+/*
             for(unsigned int j = 0; j < face.mNumIndices; j++) {
-                indices.push_back(face.mIndices[j]);
+                if (move_indices_hash.find(face.mIndices[j]) != move_indices_hash.end()) {
+                    b_delete_face = true;
+                    break;
+                }
+            }
+*/
+            if (!b_delete_face) {
+                // retrieve all indices of the face and store them in the indices vector
+                for(unsigned int j = 0; j < face.mNumIndices; j++) {
+                    indices.push_back(face.mIndices[j]);
+                }
             }
         }
 /*
+        std::cout << "starting add faces\n";
         int count = 0;
         for(unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
@@ -250,15 +263,14 @@ private:
             Vertex vertex = vertices[move_indices[i]];
 
 
-            vertex.Position.x -= 0.5;
-            vertex.Position.y += 2;
+            float dir = -4;
+            vertex.Position.x += 0.13 * dir;
+            vertex.Position.y += -0.4 * dir;
+            //vertex.Position.z += 4;
 
             vertices.push_back(vertex);
         }
 */
-
-
-
 
         std::cout << "finished add faces\n";
         // process materials
