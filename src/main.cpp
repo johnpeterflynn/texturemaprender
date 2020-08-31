@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
         ("output-path", po::value<std::string>(), "path to output rendered frames")
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
         ("free-mode", po::value<bool>()->default_value(free_mode), "allow free moving camera")
+        ("pose-start", po::value<int>()->default_value(0), "start pose index")
     ;
 
     po::variables_map vm;
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
     }
 
     free_mode = vm["free-mode"].as<bool>();
+    num_processed_poses = vm["pose-start"].as<int>();
 
     Scene::Params scene_params;
     scene_params.model_path = vm["model"].as<std::string>();
