@@ -35,6 +35,7 @@ private:
     void NotifyScroll(double yoffset);
 
     SceneModel m_model;
+    Model m_cube;
 };
 
 #endif // SCENE_H

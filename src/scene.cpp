@@ -5,7 +5,8 @@
 Scene::Scene(const Scene::Params &params)
     : m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
     , m_cam_loader(params.cam_params_dir, params.poses_dir)
-    , m_model(params.model_path, params.aggregation_path, params.segs_path)
+    , m_model(params.model_path, params.aggregation_path, params.segs_path),
+      m_cube("resources/cube/cube.ply")
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
 }
@@ -26,6 +27,7 @@ glm::mat4 Scene::GetModelMatrix() {
 
 void Scene::Draw(Shader& shader) {
     m_model.Draw(shader);
+    m_cube.Draw(shader);
 }
 
 void Scene::NotifyKeys(Key key, float deltaTime) {
