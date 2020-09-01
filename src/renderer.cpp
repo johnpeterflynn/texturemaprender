@@ -86,27 +86,27 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     // TODO: Make m_camera private
     glm::mat4 projection = scene.m_camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
 
-    // TODO: Use view matrix from camera
+    // TODO: Resolve need to rotate the view by -90 and -180 degrees in these
+    //  two modes.
     glm::mat4 view = glm::mat4(1.0f);
     if (free_mode) {
         // TODO: Make m_camera private
-        view = scene.m_camera.GetViewMatrix();
+        view = scene.m_camera.GetViewMatrix()
+                * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                              glm::vec3(1.0f, 0.0f, 0.0f));
     }
-    view = view * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    else {
+        // TODO: Make m_camera_loader private
+        // Rotate to make +Z the up direction as often defined by 3D scans
+        view = glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f),
+                           glm::vec3(1.0f, 0.0f, 0.0f))
+                * glm::inverse(scene.m_cam_loader.getPose(pose_id));
+    }
 
     m_uv_shader.setMat4("projection", projection);
     m_uv_shader.setMat4("view", view);
 
-    // render the loaded model
-    //glm::mat4 model = scene.GetModelMatrix();
     glm::mat4 model = glm::mat4(1.0f);
-    if (!free_mode) {
-        // TODO: Make m_camera_loader private
-        // Rotate to make +Z the up direction as often defined by 3D scans
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
-                            glm::vec3(1.0f, 0.0f, 0.0f))
-                * glm::inverse(scene.m_cam_loader.getPose(pose_id));
-    }
 
     m_uv_shader.setMat4("model", model);
 
