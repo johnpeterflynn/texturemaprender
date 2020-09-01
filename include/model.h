@@ -22,10 +22,12 @@
 
 #include <nlohmann/json.hpp>
 
+#include "object.h"
+
 using namespace std;
 using json = nlohmann::json;
 
-class Model
+class Model : public Object
 {
 public:
     // model data
