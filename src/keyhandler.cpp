@@ -74,6 +74,10 @@ void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
         NotifyAllKeys(KeyListener::Key::SPACE, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         NotifyAllKeys(KeyListener::Key::LEFT_SHIFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::MINUS, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::EQUAL, deltaTime);
 
 }
 
