@@ -8,7 +8,7 @@ public:
     SceneModel(string const &model_path, string const &aggregation_path,
                string const &segs_path);
 
-    Model extractLabeledSubmodel(int id);
+    std::shared_ptr<Model> extractLabeledSubmodel(int id);
 
 private:
     std::string m_aggregation_path;

@@ -36,10 +36,15 @@ public:
     string directory;
     bool gammaCorrection;
 
+    Model(bool gamma = false) {
+        setup();
+    }
+
     // constructor, expects a filepath to a 3D model.
-    Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
+    Model(string const &path, bool gamma = false)
+        : gammaCorrection(gamma)
     {
-        stbi_set_flip_vertically_on_load(false); // TODO: Is this necessary?
+        setup();
         loadModel(path);
     }
 
@@ -51,6 +56,10 @@ public:
     }
 
 private:
+    void setup() {
+        stbi_set_flip_vertically_on_load(false); // TODO: Is this necessary?
+    }
+
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(string const &path)
     {

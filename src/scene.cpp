@@ -11,6 +11,10 @@ Scene::Scene(const Scene::Params &params)
     , m_cube("resources/cube/cube.ply")
     , m_movement_speed(2.5f)
     , m_b_hold_object(false)
+    , m_submodel(nullptr)
+    , m_submodel_id(0)
+    , m_num_submodules(67) // TODO: Set this from segs file
+
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
 }
@@ -55,11 +59,18 @@ void Scene::Draw(Shader& shader) {
 
     shader.setMat4("model", model);
     m_cube.Draw(shader);
+
+    if (m_submodel) {
+        model = glm::translate(m_submodel->m_position);
+        shader.setMat4("model", model);
+        m_submodel->Draw(shader);
+    }
 }
 
 void Scene::NotifyKeys(Key key, float deltaTime) {
     float velocity = m_movement_speed * deltaTime;
 
+    // TODO: Optionally debounce the keys
     switch(key) {
      case Key::W:
         m_camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -108,6 +119,14 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
        m_cube.m_pitch = 0;
        m_cube.m_yaw = 0;
        break;
+    case Key::MINUS:
+        m_submodel_id = std::max(0, m_submodel_id - 1);
+        std::cout << "ID: " << m_submodel_id << "\n";
+        break;
+    case Key::EQUAL:
+        m_submodel_id = std::min(m_submodel_id + 1, m_num_submodules - 1);
+        std::cout << "ID: " << m_submodel_id << "\n";
+        break;
     case Key::O:
         if (!m_b_hold_object) {
             m_hold_object_dist = glm::distance(m_camera.m_position, m_cube.m_position);
@@ -116,6 +135,9 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
         else {
             m_b_hold_object = false;
         }
+        break;
+    case Key::M:
+        m_submodel = m_model.extractLabeledSubmodel(m_submodel_id);
         break;
     }
 }

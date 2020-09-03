@@ -36,6 +36,9 @@ private:
 
     SceneModel m_model;
     Model m_cube;
+    std::shared_ptr<Model> m_submodel;
+    int m_submodel_id;
+    int m_num_submodules;
 
     float m_movement_speed;
     bool m_b_hold_object;
