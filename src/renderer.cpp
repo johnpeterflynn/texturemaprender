@@ -106,10 +106,6 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     m_uv_shader.setMat4("projection", projection);
     m_uv_shader.setMat4("view", view);
 
-    glm::mat4 model = glm::mat4(1.0f);
-
-    m_uv_shader.setMat4("model", model);
-
     scene.Draw(m_uv_shader);
 
     if (writeToFile) {

@@ -8,7 +8,6 @@ public:
     Object();
     Object(glm::vec3 position, float yaw, float pitch);
 
-protected:
     // Position
     glm::vec3 m_position;
 

@@ -36,6 +36,10 @@ private:
 
     SceneModel m_model;
     Model m_cube;
+
+    float m_movement_speed;
+    bool m_b_hold_object;
+    float m_hold_object_dist;
 };
 
 #endif // SCENE_H
