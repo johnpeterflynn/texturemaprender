@@ -72,20 +72,41 @@ std::shared_ptr<Model> SceneModel::extractLabeledSubmodel(int id) {
     }
 
     // Get all vertices from scene mesh within segmentation
+    // TODO: Find center of mesh instead of mean vertex
+    // TODO: Use a more compact vector representation
+    Vertex mean_vertex;
+    mean_vertex.Position.x = 0;
+    mean_vertex.Position.y = 0;
+    mean_vertex.Position.z = 0;
     for(unsigned int i = 0; i < seg_vert_indices.size(); i++) {
         Vertex vertex = mesh.vertices[seg_vert_indices[i]];
 
-        // TODO: Remove manual offset
-        float dir = -4;
-        vertex.Position.x += 0.13 * dir;
-        vertex.Position.y += -0.4 * dir;
-        //vertex.Position.z += 4;
+        mean_vertex.Position.x += vertex.Position.x;
+        mean_vertex.Position.y += vertex.Position.y;
+        mean_vertex.Position.z += vertex.Position.z;
 
         vertices.push_back(vertex);
     }
 
+    mean_vertex.Position.x /= seg_vert_indices.size();
+    mean_vertex.Position.y /= seg_vert_indices.size();
+    mean_vertex.Position.z /= seg_vert_indices.size();
+
+    // Subtract mean from every vertex
+    for(auto &vertex : vertices) {
+        vertex.Position.x -= mean_vertex.Position.x;
+        vertex.Position.y -= mean_vertex.Position.y;
+        vertex.Position.z -= mean_vertex.Position.z;
+    }
+
     // TODO: This is sort of a hack. Handle lifecycle of model automatically.
     std::shared_ptr<Model> submodel = std::make_shared<Model>();
+
+    // Position submodel at its previous mean vector position
+    submodel->m_position[0] = mean_vertex.Position.x;
+    submodel->m_position[1] = mean_vertex.Position.y;
+    submodel->m_position[2] = mean_vertex.Position.z;
+
     submodel->meshes.emplace_back(vertices, indices, textures);
     return submodel;
 }
