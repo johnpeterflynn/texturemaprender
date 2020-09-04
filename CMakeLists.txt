@@ -23,6 +23,18 @@ find_library(ASSIMP_LIBRARY assimp HINTS ${PROJECT_SOURCE_DIR}/libs)
 find_package(Boost 1.70 COMPONENTS program_options system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
+# OpenCV
+find_package(OpenCV 3 QUIET COMPONENTS core features2d)
+if (OpenCV_FOUND)
+  message(STATUS "Found OpenCV 3 headers in: ${OpenCV_INCLUDE_DIRS}")
+else()
+  message(STATUS "Didn't find OpenCV 3, looking for 2")
+  # HINTS needed for macos homebrew (install with `brew install opencv@2`)
+  find_package( OpenCV 2 REQUIRED COMPONENTS core features2d
+      HINTS /usr/local/opt/opencv@2 )
+  message(STATUS "Found OpenCV 2 headers in: ${OpenCV_INCLUDE_DIRS}")
+endif()
+
 set(SOURCES
     src/main.cpp
     src/renderer.cpp
@@ -51,5 +63,6 @@ target_link_libraries(
     ${TORCH_LIBRARIES}
     ${CMAKE_DL_LIBS}
     ZLIB::ZLIB
+    ${OpenCV_LIBS}
     )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)

@@ -13,6 +13,7 @@ class Renderer : public KeyListener {
 public:
     Renderer(int height, int width, const std::string &net_path,
              const std::string &output_path);
+    ~Renderer();
 
     // TODO: Make params const
     void Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile);
@@ -27,6 +28,7 @@ private:
     Shader m_texture_shader;
 
     FrameWriter m_frameWriter;
+    bool m_b_recording_video;
 
     DNRenderer m_dnr;
 

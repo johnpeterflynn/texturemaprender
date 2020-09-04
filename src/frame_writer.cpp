@@ -66,6 +66,44 @@ void FrameWriter::WriteAsJpg(const int id, const int height, const int width) {
     stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 90);
 }
 
+void FrameWriter::SetupWriteVideo(int height, int width, float framerate) {
+    m_p_video_writer = std::make_shared<cv::VideoWriter>();
+    m_p_video_writer->open( "testvideo.avi",  /*Video Name*/
+                -1,                         /* fourcc */
+                framerate,                      /* Frame Rate */
+                cv::Size( width, height ),  /* Frame Size of the Video  */
+                true);
+}
+
+void FrameWriter::ShutdownWriteVideo() {
+    m_p_video_writer->release();
+    m_p_video_writer = nullptr;
+}
+
+bool FrameWriter::WriteVideoReady() {
+    return m_p_video_writer != nullptr;
+}
+
+// TODO: Save height and width from setup
+// TODO: Record in a background thread
+// TODO: Record from GPU memory (no glReadPixels()?)
+void FrameWriter::WriteFrameAsVideo(int height, int width) {
+    cv::Mat pixels(height, width, CV_8UC3 );
+
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data);
+
+    cv::Mat cv_pixels(height, width, CV_8UC3 );
+    for( int y=0; y<height; y++ ) for( int x=0; x<width; x++ )
+    {
+        cv_pixels.at<cv::Vec3b>(y,x)[2] = pixels.at<cv::Vec3b>(height-y-1,x)[0];
+        cv_pixels.at<cv::Vec3b>(y,x)[1] = pixels.at<cv::Vec3b>(height-y-1,x)[1];
+        cv_pixels.at<cv::Vec3b>(y,x)[0] = pixels.at<cv::Vec3b>(height-y-1,x)[2];
+    }
+
+    *m_p_video_writer << cv_pixels;
+}
+
 void FrameWriter::CompressWriteFile(char *buf, int size,
                                       const std::string& filename)
 {

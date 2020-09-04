@@ -12,6 +12,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
     , m_b_snapshot(false)
+    , m_b_recording_video(false)
 {
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -66,6 +67,12 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+}
+
+Renderer::~Renderer() {
+    if (m_frameWriter.WriteVideoReady()) {
+        m_frameWriter.ShutdownWriteVideo();
+    }
 }
 
 void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile) {
@@ -130,12 +137,30 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     //glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, RENDER_WIDTH, RENDER_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    if (m_b_recording_video && m_frameWriter.WriteVideoReady()) {
+        m_frameWriter.WriteFrameAsVideo(m_height, m_width);
+    }
 }
 
 void Renderer::NotifyKeys(Key key, float deltaTime) {
     switch(key) {
      case Key::P:
         m_b_snapshot = true;
+        break;
+     case Key::V:
+        if (!m_b_recording_video) {
+            m_frameWriter.SetupWriteVideo(m_height, m_width);
+            m_b_recording_video = true;
+
+            std::cout << "Starting video recording\n";
+        }
+        else {
+            m_frameWriter.ShutdownWriteVideo();
+            m_b_recording_video = false;
+
+            std::cout << "Finishing video recording\n";
+        }
         break;
     }
 }

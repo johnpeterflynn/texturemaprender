@@ -3,6 +3,11 @@
 
 #include <boost/filesystem.hpp>
 
+// TODO: Do not include the entire opencv library
+//#include <opencv2/core.hpp>     // Basic OpenCV structures (cv::Mat)
+//#include <opencv2/videoio.hpp>  // Video write
+#include <opencv2/opencv.hpp>
+
 #include "deferred_neural_renderer.h"
 
 namespace fs = boost::filesystem;
@@ -19,11 +24,18 @@ public:
     void WriteAsTexcoord(const int id, const int height, const int width);
     void WriteAsJpg(const int id, const int height, const int width);
 
+    void SetupWriteVideo(int height, int width, float framerate = 25.0f);
+    void ShutdownWriteVideo();
+    bool WriteVideoReady();
+    void WriteFrameAsVideo(int height, int width);
+
 private:
     static void CompressWriteFile(char *buf, int size,
                                     const std::string& filename);
 
     fs::path m_output_path;
+
+    std::shared_ptr<cv::VideoWriter> m_p_video_writer;
 };
 
 #endif // FRAME_WRITER_H
