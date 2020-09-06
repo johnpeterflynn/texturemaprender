@@ -71,20 +71,24 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     timer.checkpoint("checkpoint test 6");
 
     timer.checkpoint("torch from blob");
-    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
+    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided).device(torch::kCUDA);
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
 
     timer.checkpoint("pass input to cuda");
 
 #ifndef __APPLE__
-    input = input.to(at::kCUDA);
+    //input = input.to(at::kCUDA);
 #endif
+
+    std::cout << "1 GPU Pointer: " << input.data_ptr() << "\n";
 
     timer.checkpoint("flip");
     input = input.flip({0});
+    std::cout << "2 GPU Pointer: " << input.data_ptr() << "\n";
     timer.checkpoint("unsqueeze");
     //input = input.permute({2, 0, 1}).unsqueeze(0);
     input = input.permute({2, 1, 0}).unsqueeze(0);
+    std::cout << "3 GPU Pointer: " << input.data_ptr() << "\n";
     //input = input.unsqueeze(0);
 
     //std::cout << "input shape: " << input.sizes() << "\n";
@@ -138,8 +142,8 @@ void DNRenderer::write(torch::Tensor& output, bool write) {
     output = output.contiguous();
 
 #ifndef __APPLE__
-    timer.checkpoint("to cpu");
-    output = output.to(at::kCPU);
+    //timer.checkpoint("to cpu");
+    //output = output.to(at::kCPU);
 #endif
 
     m_output = output;

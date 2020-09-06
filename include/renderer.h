@@ -37,6 +37,9 @@ private:
     unsigned int m_renderbuffer;
     unsigned int m_quadVAO, m_quadVBO;
 
+    unsigned int m_cudabuffer;
+    unsigned int m_cudatexColorBuffer;
+
     bool m_b_snapshot;
 };
 

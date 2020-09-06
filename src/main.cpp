@@ -9,6 +9,8 @@
 
 #include <boost/program_options.hpp>
 
+#include <cuda_gl_interop.h>
+
 #include "keyhandler.h"
 
 #include "renderer.h"
@@ -94,6 +96,15 @@ int main(int argc, char *argv[])
 int run(const Scene::Params &scene_params, std::string net_path,
         std::string output_path, bool write_coords)
 {
+
+  int d;
+    cudaError_t err = cudaGetDevice(&d);
+      if (err != cudaSuccess) printf("kernel cuda error: %d, %s\n", (int)err, cudaGetErrorString(err));
+        printf("device = %d\n", d);
+
+    int code = cudaGLSetGLDevice(0);
+    std::cout << "CUDA code: " << code << "\n";
+    
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
