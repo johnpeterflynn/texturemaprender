@@ -1,7 +1,6 @@
 #include "renderer.h"
 
 #include <glad/glad.h>
-#include <cuda_gl_interop.h>
 
 Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path)
@@ -15,18 +14,17 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_b_snapshot(false)
     , m_b_recording_video(false)
 {
-
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-    cudaGLRegisterBufferObject(m_framebuffer);
     
     // generate texture
     glGenTextures(1, &m_texColorBuffer);
     glBindTexture(GL_TEXTURE_2D, m_texColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, m_width, m_height, 0, GL_RG, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, m_width, m_height, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
+    //cudaGraphicsGLRegisterImage(&m_cgr_o2c, m_texColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);
 
     // attach it to currently bound framebuffer object
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texColorBuffer, 0);
@@ -46,21 +44,20 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glGenBuffers(1, &m_cudabuffer);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_cudabuffer);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, m_width * m_height * 4,
-		    NULL, GL_DYNAMIC_COPY);
-    cudaGLRegisterBufferObject(m_cudabuffer);
+    // CUDA to OpenGL
     glEnable(GL_TEXTURE_2D);
     glGenTextures(1,&m_cudatexColorBuffer);
     glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
+    // TODO: Check appropriate data format
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_BGRA,
 		    GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    
+    // TODO: Select current register flag
+    // Indicate that cuda will write to entire contents of texture but not read from it.
+    cudaGraphicsGLRegisterImage(&m_cgr, m_cudatexColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);//cudaGraphicsRegisterFlagsWriteDiscard);
+
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates. NOTE that this plane is now much smaller and at the top of the screen
         // positions   // texCoords
         -1.0f,  1.0f,  0.0f, 1.0f,
@@ -86,9 +83,12 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+
 }
 
 Renderer::~Renderer() {
+    cudaGraphicsUnregisterResource(m_cgr); 
+    
     if (m_frameWriter.WriteVideoReady()) {
         m_frameWriter.ShutdownWriteVideo();
     }
@@ -144,18 +144,16 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
         m_b_snapshot = false;
     }
 
-    uint8_t* dnr_out_gl;
-    cudaGLMapBufferObject((void**)(&dnr_out_gl), m_cudabuffer);
+    cudaGraphicsMapResources(1, &m_cgr);
+    cudaArray* dnr_out_gl;
+    cudaGraphicsSubResourceGetMappedArray(&dnr_out_gl, m_cgr, 0, 0);
     uint8_t* dnr_out_cuda = m_dnr.m_output.data_ptr<uint8_t>();
-    // TODO: Pass pointers directly instead of copying data
-    cudaMemcpy(dnr_out_gl, dnr_out_cuda, m_height * m_width * 3, cudaMemcpyDeviceToDevice);
-    cudaGLUnmapBufferObject(m_cudabuffer);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_cudabuffer);
-    glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
-    glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    //glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    
+    int bytes_per_pixel = 4; // RGBA8
+    auto err = cudaMemcpy2DToArray(dnr_out_gl, 0, 0, dnr_out_cuda, bytes_per_pixel * m_width, bytes_per_pixel * m_width, m_height,
+                                   cudaMemcpyDeviceToDevice);
+    //std::cout << "Error code: " << err << ": " << cudaGetErrorString(err) << "\n";
+    cudaGraphicsUnmapResources(1, &m_cgr);
+
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -164,12 +162,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     m_texture_shader.use();
     glBindVertexArray(m_quadVAO);
     glDisable(GL_DEPTH_TEST);
-    //glBindTexture(GL_TEXTURE_2D, m_texColorBuffer);
     glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
-    //uint8_t* data_out;
-    //data_out = m_dnr.m_output.data_ptr<uint8_t>();
-
-    //glTexSubImage2D(GL_TEXTURE_2D, 0 ,0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)data_out);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     if (m_b_recording_video && m_frameWriter.WriteVideoReady()) {

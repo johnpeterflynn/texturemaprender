@@ -71,13 +71,13 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     timer.checkpoint("checkpoint test 6");
 
     timer.checkpoint("torch from blob");
-    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided).device(torch::kCUDA);
+    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
     auto input = torch::from_blob(data, {rows, cols, 2}, options);
 
     timer.checkpoint("pass input to cuda");
 
 #ifndef __APPLE__
-    //input = input.to(at::kCUDA);
+    input = input.to(at::kCUDA);
 #endif
 
     std::cout << "1 GPU Pointer: " << input.data_ptr() << "\n";
@@ -122,29 +122,38 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
 
 }
 
-void DNRenderer::write(torch::Tensor& output, bool write) {
+void DNRenderer::write(torch::Tensor& tens, bool write) {
     Timer& timer = Timer::get();
     timer.checkpoint("permute output");
-    output = output.squeeze().permute({1, 2, 0});
+    tens = tens.squeeze().permute({1, 2, 0});
 
     if (!write) {
         timer.checkpoint("flip output");
-        output = output.flip({0});
+        tens = tens.flip({0});
     }
 
     timer.checkpoint("rescale output");
-    output = ((output + 1.0) / 2.0) * 255;
+    tens = ((tens + 1.0) / 2.0) * 255;
     timer.checkpoint("round output");
-    output = torch::round(output);
+    tens = torch::round(tens);
     timer.checkpoint("convert output to uint8_t");
-    output = output.to(torch::kUInt8);
+    tens = tens.to(torch::kUInt8);
+
+    // TODO: More efficient way to increase size of pixel color dimension?
+    auto tens_shape = tens.sizes();
+    auto options = torch::TensorOptions().dtype(torch::kUInt8).device(at::kCUDA);
+    timer.checkpoint("create full tensor");
+    auto alpha = torch::full({tens_shape[0], tens_shape[1], 1}, 255, options);
+    timer.checkpoint("create RGBA tensor");
+    auto output = torch::cat({tens, alpha}, 2);
+
     timer.checkpoint("make output contiguous");
     output = output.contiguous();
 
-#ifndef __APPLE__
+//#ifndef __APPLE__
     //timer.checkpoint("to cpu");
     //output = output.to(at::kCPU);
-#endif
+//#endif
 
     m_output = output;
 

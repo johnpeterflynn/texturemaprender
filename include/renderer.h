@@ -9,6 +9,8 @@
 #include "scene.h"
 #include "shader_s.h"
 
+#include <cuda_gl_interop.h>
+
 class Renderer : public KeyListener {
 public:
     Renderer(int height, int width, const std::string &net_path,
@@ -39,6 +41,8 @@ private:
 
     unsigned int m_cudabuffer;
     unsigned int m_cudatexColorBuffer;
+
+    cudaGraphicsResource_t m_cgr;
 
     bool m_b_snapshot;
 };
