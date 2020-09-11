@@ -24,7 +24,7 @@ find_package(Boost 1.70 COMPONENTS program_options system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 # OpenCV
-find_package(OpenCV 3 QUIET COMPONENTS core features2d)
+find_package(OpenCV 4 QUIET COMPONENTS core features2d videoio)
 if (OpenCV_FOUND)
   message(STATUS "Found OpenCV 3 headers in: ${OpenCV_INCLUDE_DIRS}")
 else()

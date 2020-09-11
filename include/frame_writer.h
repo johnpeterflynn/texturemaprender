@@ -6,7 +6,8 @@
 // TODO: Do not include the entire opencv library
 //#include <opencv2/core.hpp>     // Basic OpenCV structures (cv::Mat)
 //#include <opencv2/videoio.hpp>  // Video write
-#include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
+//#include <opencv/cv.hpp>
 
 #include "deferred_neural_renderer.h"
 
