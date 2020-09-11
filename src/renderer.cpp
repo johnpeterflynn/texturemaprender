@@ -25,8 +25,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-    // TODO: Select current register flag
-    cudaGraphicsGLRegisterImage(&m_cgr_gl2cuda, m_texColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);//cudaGraphicsRegisterFlagsWriteDiscard);
+    cudaGraphicsGLRegisterImage(&m_cgrs[0], m_texColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsReadOnly);
     // attach it to currently bound framebuffer object
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texColorBuffer, 0);
 
@@ -54,9 +53,8 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-    // TODO: Select current register flag
     // Indicate that cuda will write to entire contents of texture but not read from it.
-    cudaGraphicsGLRegisterImage(&m_cgr_cuda2gl, m_cudatexColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsNone);//cudaGraphicsRegisterFlagsWriteDiscard);
+    cudaGraphicsGLRegisterImage(&m_cgrs[1], m_cudatexColorBuffer, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
 
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates. NOTE that this plane is now much smaller and at the top of the screen
         // positions   // texCoords
@@ -89,14 +87,15 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     cudaMalloc((void**)(&m_dnr_in_data_ptr), 4 * sizeof(float) * m_width * m_height);
 }
 
-Renderer::~Renderer() {
-    cudaGraphicsUnregisterResource(m_cgr_gl2cuda);
-    cudaGraphicsUnregisterResource(m_cgr_cuda2gl);
-    cudaFree(m_dnr_in_data_ptr);
-    
+Renderer::~Renderer() {    
     if (m_frameWriter.WriteVideoReady()) {
         m_frameWriter.ShutdownWriteVideo();
     }
+
+    for (int i = 0; i < NUM_GRAPHICS_RESOURCES; i++) {
+        cudaGraphicsUnregisterResource(m_cgrs[i]);
+    }
+    cudaFree(m_dnr_in_data_ptr);
 }
 
 void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile) {
@@ -145,27 +144,20 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     // OpenGL to CUDA
     // TODO: Map resources once for both directions
-    cudaGraphicsMapResources(1, &m_cgr_gl2cuda);
+    cudaGraphicsMapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
     cudaArray* dnr_in_cuda_array;
-    auto err_map = cudaGraphicsSubResourceGetMappedArray(&dnr_in_cuda_array, m_cgr_gl2cuda, 0, 0);
+    auto err_map = cudaGraphicsSubResourceGetMappedArray(&dnr_in_cuda_array, m_cgrs[0], 0, 0);
     // TODO: Define this in initialization
     int in_bytes_per_pixel = 4 * sizeof(float); // RGBA32F
     // TODO: Is this copy necessary?
     auto err_in = cudaMemcpy2DFromArray(m_dnr_in_data_ptr, in_bytes_per_pixel * m_width, dnr_in_cuda_array, 0, 0, in_bytes_per_pixel * m_width, m_height,
                                    cudaMemcpyDeviceToDevice);
     std::cout << "Input error code: " << err_in << ": " << cudaGetErrorString(err_in) << "\n";
-    cudaGraphicsUnmapResources(1, &m_cgr_gl2cuda);
     m_dnr.render(m_dnr_in_data_ptr, m_height, m_width, false);
 
-    if (m_b_snapshot) {
-        m_frameWriter.RenderAsTexcoord(m_dnr, m_height, m_width, true);
-        m_b_snapshot = false;
-    }
-
     // CUDA to OpenGl
-    cudaGraphicsMapResources(1, &m_cgr_cuda2gl);
     cudaArray* dnr_out_cuda_array;
-    cudaGraphicsSubResourceGetMappedArray(&dnr_out_cuda_array, m_cgr_cuda2gl, 0, 0);
+    cudaGraphicsSubResourceGetMappedArray(&dnr_out_cuda_array, m_cgrs[1], 0, 0);
     uint8_t* dnr_out_data_ptr = m_dnr.m_output.data_ptr<uint8_t>();
     // TODO: Define this in initialization
     int out_bytes_per_pixel = 4 * sizeof(uint8_t); // RGBA8
@@ -173,7 +165,12 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     auto err_out = cudaMemcpy2DToArray(dnr_out_cuda_array, 0, 0, dnr_out_data_ptr, out_bytes_per_pixel * m_width, out_bytes_per_pixel * m_width, m_height,
                                    cudaMemcpyDeviceToDevice);
     std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
-    cudaGraphicsUnmapResources(1, &m_cgr_cuda2gl);
+    cudaGraphicsUnmapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
+
+    if (m_b_snapshot) {
+        m_frameWriter.RenderAsTexcoord(m_dnr, m_height, m_width, true);
+        m_b_snapshot = false;
+    }
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default

@@ -42,8 +42,8 @@ private:
     unsigned int m_cudabuffer;
     unsigned int m_cudatexColorBuffer;
 
-    cudaGraphicsResource_t m_cgr_gl2cuda;
-    cudaGraphicsResource_t m_cgr_cuda2gl;
+    static const int NUM_GRAPHICS_RESOURCES = 2;
+    cudaGraphicsResource_t m_cgrs[NUM_GRAPHICS_RESOURCES];
 
     float* m_dnr_in_data_ptr;
 
