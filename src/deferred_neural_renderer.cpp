@@ -108,7 +108,7 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
 
 //    timer.checkpoint("sample from grid");
 
-    std::cout << "input shape: " << input.sizes() << "\n";
+    //std::cout << "input shape: " << input.sizes() << "\n";
     /*
     input = F::grid_sample(input, m_grid, F::GridSampleFuncOptions()
                                   .mode(torch::kNearest)

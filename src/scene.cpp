@@ -127,10 +127,12 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
         break;
     case Key::O:
         if (!m_b_hold_object) {
+            std::cout << "Grabbing object " << m_submodel_id << "\n";
             m_hold_object_dist = glm::distance(m_camera.m_position, m_submodel->m_position);
             m_b_hold_object = true;
         }
         else {
+            std::cout << "Releasing object " << m_submodel_id << "\n";
             m_b_hold_object = false;
         }
         break;

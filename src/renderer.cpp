@@ -152,7 +152,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     // TODO: Is this copy necessary?
     auto err_in = cudaMemcpy2DFromArray(m_dnr_in_data_ptr, in_bytes_per_pixel * m_width, dnr_in_cuda_array, 0, 0, in_bytes_per_pixel * m_width, m_height,
                                    cudaMemcpyDeviceToDevice);
-    std::cout << "Input error code: " << err_in << ": " << cudaGetErrorString(err_in) << "\n";
+    //std::cout << "Input error code: " << err_in << ": " << cudaGetErrorString(err_in) << "\n";
     m_dnr.render(m_dnr_in_data_ptr, m_height, m_width, false);
 
     // CUDA to OpenGl
@@ -164,7 +164,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     // TODO: Is this copy necessary?
     auto err_out = cudaMemcpy2DToArray(dnr_out_cuda_array, 0, 0, dnr_out_data_ptr, out_bytes_per_pixel * m_width, out_bytes_per_pixel * m_width, m_height,
                                    cudaMemcpyDeviceToDevice);
-    std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
+    //std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
     cudaGraphicsUnmapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
 
     if (m_b_snapshot) {
