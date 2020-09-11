@@ -195,9 +195,7 @@ void Renderer::NotifyKeys(Key key, float deltaTime) {
         break;
      case Key::V:
         if (!m_b_recording_video) {
-            m_frameWriter.SetupWriteVideo(m_height, m_width);
-            m_b_recording_video = true;
-
+            m_b_recording_video = m_frameWriter.SetupWriteVideo(m_height, m_width);
             std::cout << "Starting video recording\n";
         }
         else {

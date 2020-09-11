@@ -24,7 +24,7 @@ public:
     void WriteAsTexcoord(const int id, const int height, const int width);
     void WriteAsJpg(const int id, const int height, const int width);
 
-    void SetupWriteVideo(int height, int width, float framerate = 25.0f);
+    bool SetupWriteVideo(int height, int width, float framerate = 25.0f);
     void ShutdownWriteVideo();
     bool WriteVideoReady();
     void WriteFrameAsVideo(int height, int width);
@@ -34,8 +34,7 @@ private:
                                     const std::string& filename);
 
     fs::path m_output_path;
-
-    std::shared_ptr<cv::VideoWriter> m_p_video_writer;
+    cv::VideoWriter m_video_writer;
 };
 
 #endif // FRAME_WRITER_H

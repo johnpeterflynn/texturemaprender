@@ -7,6 +7,7 @@
 
 #include <gzip/compress.hpp>
 #include "stb/stb_image_write.h"
+#include "utils.h"
 
 FrameWriter::FrameWriter() {
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
@@ -66,27 +67,36 @@ void FrameWriter::WriteAsJpg(const int id, const int height, const int width) {
     stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 90);
 }
 
-void FrameWriter::SetupWriteVideo(int height, int width, float framerate) {
-    m_p_video_writer = std::make_shared<cv::VideoWriter>();
-    m_p_video_writer->open( "testvideo.avi",  /*Video Name*/
-                -1,                         /* fourcc */
-                framerate,                      /* Frame Rate */
-                cv::Size( width, height ),  /* Frame Size of the Video  */
+bool FrameWriter::SetupWriteVideo(int height, int width, float framerate) {
+    std::string filename = dnr::time::getTimeAsString("recordings/") + ".avi";
+    m_video_writer.open(filename,
+                cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
+                framerate,
+                cv::Size(width, height),
                 true);
+
+    bool b_opened = m_video_writer.isOpened();
+
+    if (b_opened) {
+        std::cout  << "Recording video to: " << filename << "\n";
+    }
+    else {
+        std::cout  << "Could not create video file for writing: " << filename << "\n";
+    }
+
+    return b_opened;
 }
 
 void FrameWriter::ShutdownWriteVideo() {
-    m_p_video_writer->release();
-    m_p_video_writer = nullptr;
+    m_video_writer.release();
 }
 
 bool FrameWriter::WriteVideoReady() {
-    return m_p_video_writer != nullptr;
+    return m_video_writer.isOpened();
 }
 
 // TODO: Save height and width from setup
 // TODO: Record in a background thread
-// TODO: Record from GPU memory (no glReadPixels()?)
 void FrameWriter::WriteFrameAsVideo(int height, int width) {
     cv::Mat pixels(height, width, CV_8UC3 );
 
@@ -101,7 +111,8 @@ void FrameWriter::WriteFrameAsVideo(int height, int width) {
         cv_pixels.at<cv::Vec3b>(y,x)[0] = pixels.at<cv::Vec3b>(height-y-1,x)[2];
     }
 
-    *m_p_video_writer << cv_pixels;
+    // Write next frame
+    m_video_writer.write(cv_pixels);
 }
 
 void FrameWriter::CompressWriteFile(char *buf, int size,
