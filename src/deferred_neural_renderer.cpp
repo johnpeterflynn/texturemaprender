@@ -71,14 +71,18 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
     timer.checkpoint("checkpoint test 6");
 
     timer.checkpoint("torch from blob");
-    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided);
-    auto input = torch::from_blob(data, {rows, cols, 2}, options);
+    auto options = torch::TensorOptions().dtype(torch::kFloat32).layout(torch::kStrided).device(at::kCUDA);
+    auto input = torch::from_blob(data, {rows, cols, 4}, options);
+
+    // TODO: More efficient way to remove/ignore extra data?
+    // Remode Blue and Alpha data added by opengl
+    input = input.index({torch::indexing::Ellipsis, torch::indexing::Slice(torch::indexing::None, 2)});
 
     timer.checkpoint("pass input to cuda");
 
-#ifndef __APPLE__
-    input = input.to(at::kCUDA);
-#endif
+//#ifndef __APPLE__
+//    input = input.to(at::kCUDA);
+//#endif
 
     std::cout << "1 GPU Pointer: " << input.data_ptr() << "\n";
 

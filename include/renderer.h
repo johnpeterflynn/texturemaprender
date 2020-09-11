@@ -42,7 +42,10 @@ private:
     unsigned int m_cudabuffer;
     unsigned int m_cudatexColorBuffer;
 
-    cudaGraphicsResource_t m_cgr;
+    cudaGraphicsResource_t m_cgr_gl2cuda;
+    cudaGraphicsResource_t m_cgr_cuda2gl;
+
+    float* m_dnr_in_data_ptr;
 
     bool m_b_snapshot;
 };
