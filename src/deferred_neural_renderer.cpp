@@ -44,6 +44,7 @@ int DNRenderer::load(const std::string& model_filename) {
     try {
         std::cout << "Loading module\n";
         m_model = torch::jit::load(model_filename);
+        m_model.eval();
 
 #ifndef __APPLE__
         m_model.to(at::kCUDA);

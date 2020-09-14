@@ -21,6 +21,7 @@ public:
 private:
     void write(torch::Tensor& out, bool write);
 
+    torch::NoGradGuard m_no_grad_guard;
     torch::jit::script::Module m_model;
     torch::Tensor m_grid;
 
