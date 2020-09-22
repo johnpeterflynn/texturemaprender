@@ -55,10 +55,18 @@ void FrameWriter::WriteAsTexcoord(const int id, const int height, const int widt
    delete [] heap_data;
 }
 
-void FrameWriter::WriteAsJpg(const int id, const int height, const int width) {
+void FrameWriter::WriteAsJpg(const int height, const int width, const int id) {
     int num_jpg_channels = 3;
     GLchar data[height * width * num_jpg_channels]; // # pixels x # floats per pixel
-    std::string file_path = (m_output_path / std::to_string(id)).string() + ".jpg";
+    std::string file_path;
+
+    if (id == -1) {
+        file_path = (m_output_path / dnr::time::getTimeAsString("")).string() + ".jpg";
+    } else {
+        file_path = (m_output_path / std::to_string(id)).string() + ".jpg";
+    }
+
+    std::cout << file_path << "\n";
 
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);

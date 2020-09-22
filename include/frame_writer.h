@@ -23,7 +23,7 @@ public:
     void RenderAsTexcoord(DNRenderer& dnr, int rows, int cols, bool writeout);
 
     void WriteAsTexcoord(const int id, const int height, const int width);
-    void WriteAsJpg(const int id, const int height, const int width);
+    void WriteAsJpg(const int height, const int width, const int id = -1);
 
     bool SetupWriteVideo(int height, int width, float framerate = 25.0f);
     void ShutdownWriteVideo();

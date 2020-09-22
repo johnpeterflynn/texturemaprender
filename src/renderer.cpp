@@ -167,10 +167,6 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     //std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
     cudaGraphicsUnmapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
 
-    if (m_b_snapshot) {
-        m_frameWriter.RenderAsTexcoord(m_dnr, m_height, m_width, true);
-        m_b_snapshot = false;
-    }
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -182,6 +178,12 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     glDisable(GL_DEPTH_TEST);
     glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    if (m_b_snapshot) {
+        m_frameWriter.WriteAsJpg(m_height, m_width);
+        m_b_snapshot = false;
+    }
 
     if (m_b_recording_video && m_frameWriter.WriteVideoReady()) {
         m_frameWriter.WriteFrameAsVideo(m_height, m_width);
