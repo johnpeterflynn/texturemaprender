@@ -60,6 +60,17 @@ glm::mat4 CameraLoader::loadMat4(std::string path) {
     return m;
 }
 
+void CameraLoader::saveMat4(const glm::mat4& mat, const std::string& path) {
+    int MAT_SIZE = 4;
+    glm::mat4 mat_t = glm::transpose(mat);
+    float* data = glm::value_ptr(mat_t);
+
+    std::ofstream outfile(path + ".txt");
+    for(int i = 0; i < MAT_SIZE * MAT_SIZE; i += MAT_SIZE) {
+        outfile << data[i] << " " << data[i+1] << " " << data[i+2] << " " << data[i+3] << "\n";
+    }
+}
+
 void CameraLoader::addPose(int id, const glm::mat4& pose) {
     m_id_poses[id] = pose;
     m_ids.push_back(id);
@@ -82,4 +93,8 @@ glm::mat4 CameraLoader::getPose(int index) {
     }
 
     return pose;
+}
+
+void CameraLoader::savePose(const glm::mat4& pose, const std::string& path) {
+    saveMat4(pose, path);
 }

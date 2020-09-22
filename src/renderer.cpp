@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+#include "utils.h"
+
 Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path)
     : m_height(height)
@@ -196,7 +198,22 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
 
     if (m_b_snapshot) {
-        m_frameWriter.WriteAsJpg(m_height, m_width);
+        // TODO: Create a single class that controls the writing of files
+        // TODO: Use a consistent method for concatenating file paths
+
+        std::string snap_filename = dnr::time::getTimeAsString();
+        // Take a picture snapshot
+        m_frameWriter.WriteAsJpg(m_height, m_width, std::string("snapshots/color/") + snap_filename);
+
+        // TODO: Handle matrix transformations in a separate class
+        auto pose = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
+                * glm::inverse(scene.m_camera.GetViewMatrix())
+                * glm::rotate(glm::mat4(1.0f), glm::radians(180.0f),
+                              glm::vec3(1.0f, 0.0f, 0.0f));
+
+        // Take a pose snapshot
+        scene.m_cam_loader.savePose(pose, std::string("snapshots/pose/") + snap_filename);
+
         m_b_snapshot = false;
     }
 

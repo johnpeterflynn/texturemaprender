@@ -11,7 +11,10 @@
 
 FrameWriter::FrameWriter() {
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
+    //stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
+
+    // TODO: Check if true: DNR might be flipped w.r.t. color/uv outputs
+    stbi_flip_vertically_on_write(true);
 }
 
 FrameWriter::FrameWriter(const std::string& output_path)
@@ -55,24 +58,28 @@ void FrameWriter::WriteAsTexcoord(const int id, const int height, const int widt
    delete [] heap_data;
 }
 
-void FrameWriter::WriteAsJpg(const int height, const int width, const int id) {
+void FrameWriter::WriteAsJpg(const int height, const int width, const std::string& filename) {
     int num_jpg_channels = 3;
     GLchar data[height * width * num_jpg_channels]; // # pixels x # floats per pixel
     std::string file_path;
 
-    if (id == -1) {
-        file_path = (m_output_path / dnr::time::getTimeAsString("")).string() + ".jpg";
-    } else {
-        file_path = (m_output_path / std::to_string(id)).string() + ".jpg";
+    if (filename.empty()) {
+        file_path = (m_output_path / dnr::time::getTimeAsString()).string();
     }
+    else {
+        // TODO: Writing of all objects should follow a consistent directory format
+        //file_path = (m_output_path / filename).string();
+        file_path = filename;
+    }
+    file_path += ".jpg";
 
-    std::cout << file_path << "\n";
+    std::cout << "Writing snapshot to " << file_path << "\n";
 
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     // 90% quality, could be less
-    stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 90);
+    stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 100);
 }
 
 bool FrameWriter::SetupWriteVideo(int height, int width, float framerate) {

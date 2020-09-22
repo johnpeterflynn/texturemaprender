@@ -11,7 +11,7 @@ namespace dnr
 namespace time
 {
 
-std::string getTimeAsString(std::string prepend_str = "") {
+static std::string getTimeAsString(std::string prepend_str = "") {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
