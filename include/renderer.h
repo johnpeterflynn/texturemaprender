@@ -23,7 +23,13 @@ public:
 private:
     void NotifyKeys(Key key, float deltaTime);
 
+    enum class Mode {
+        UV, COLOR, DNR
+    };
+
     const int m_height, m_width;
+
+    Mode m_render_mode;
 
     Shader m_uv_shader;
     Shader m_color_shader;

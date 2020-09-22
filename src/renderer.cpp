@@ -6,6 +6,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path)
     : m_height(height)
     , m_width(width)
+    , m_render_mode(Renderer::Mode::DNR)
     , m_uv_shader("src/shaders/vertexshader_texcoord.vs", "src/shaders/fragmentshader_texcoord.fs")
     , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
     , m_texture_shader("src/shaders/vertexshader_texture.vs", "src/shaders/fragmentshader_texture.fs")
@@ -109,9 +110,6 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // don't forget to enable shader before setting uniforms
-    m_uv_shader.use();
-
     // view/projection transformations
     // TODO: Make m_camera private
     glm::mat4 projection = scene.m_camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
@@ -133,40 +131,51 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
                 * glm::inverse(scene.m_cam_loader.getPose(pose_id));
     }
 
-    m_uv_shader.setMat4("projection", projection);
-    m_uv_shader.setMat4("view", view);
+    // TODO: A bit messy. How better to choose one of two member variables?
+    Shader *active_shader;
+    if (m_render_mode == Mode::COLOR) {
+        active_shader = &m_color_shader;
+    }
+    else {
+        active_shader = &m_uv_shader;
+    }
+    // don't forget to enable shader before setting uniforms
+    active_shader->use();
+    active_shader->setMat4("projection", projection);
+    active_shader->setMat4("view", view);
 
-    scene.Draw(m_uv_shader);
+    scene.Draw(*active_shader);
 
     if (writeToFile) {
         m_frameWriter.WriteAsTexcoord(pose_id, m_height, m_width);
     }
 
-    // OpenGL to CUDA
-    // TODO: Map resources once for both directions
-    cudaGraphicsMapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
-    cudaArray* dnr_in_cuda_array;
-    auto err_map = cudaGraphicsSubResourceGetMappedArray(&dnr_in_cuda_array, m_cgrs[0], 0, 0);
-    // TODO: Define this in initialization
-    int in_bytes_per_pixel = 4 * sizeof(float); // RGBA32F
-    // TODO: Is this copy necessary?
-    auto err_in = cudaMemcpy2DFromArray(m_dnr_in_data_ptr, in_bytes_per_pixel * m_width, dnr_in_cuda_array, 0, 0, in_bytes_per_pixel * m_width, m_height,
-                                   cudaMemcpyDeviceToDevice);
-    //std::cout << "Input error code: " << err_in << ": " << cudaGetErrorString(err_in) << "\n";
-    m_dnr.render(m_dnr_in_data_ptr, m_height, m_width, false);
+    if (m_render_mode == Mode::DNR) {
+        // OpenGL to CUDA
+        // TODO: Map resources once for both directions
+        cudaGraphicsMapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
+        cudaArray* dnr_in_cuda_array;
+        auto err_map = cudaGraphicsSubResourceGetMappedArray(&dnr_in_cuda_array, m_cgrs[0], 0, 0);
+        // TODO: Define this in initialization
+        int in_bytes_per_pixel = 4 * sizeof(float); // RGBA32F
+        // TODO: Is this copy necessary?
+        auto err_in = cudaMemcpy2DFromArray(m_dnr_in_data_ptr, in_bytes_per_pixel * m_width, dnr_in_cuda_array, 0, 0, in_bytes_per_pixel * m_width, m_height,
+                                       cudaMemcpyDeviceToDevice);
+        //std::cout << "Input error code: " << err_in << ": " << cudaGetErrorString(err_in) << "\n";
+        m_dnr.render(m_dnr_in_data_ptr, m_height, m_width, false);
 
-    // CUDA to OpenGl
-    cudaArray* dnr_out_cuda_array;
-    cudaGraphicsSubResourceGetMappedArray(&dnr_out_cuda_array, m_cgrs[1], 0, 0);
-    uint8_t* dnr_out_data_ptr = m_dnr.m_output.data_ptr<uint8_t>();
-    // TODO: Define this in initialization
-    int out_bytes_per_pixel = 4 * sizeof(uint8_t); // RGBA8
-    // TODO: Is this copy necessary?
-    auto err_out = cudaMemcpy2DToArray(dnr_out_cuda_array, 0, 0, dnr_out_data_ptr, out_bytes_per_pixel * m_width, out_bytes_per_pixel * m_width, m_height,
-                                   cudaMemcpyDeviceToDevice);
-    //std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
-    cudaGraphicsUnmapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
-
+        // CUDA to OpenGl
+        cudaArray* dnr_out_cuda_array;
+        cudaGraphicsSubResourceGetMappedArray(&dnr_out_cuda_array, m_cgrs[1], 0, 0);
+        uint8_t* dnr_out_data_ptr = m_dnr.m_output.data_ptr<uint8_t>();
+        // TODO: Define this in initialization
+        int out_bytes_per_pixel = 4 * sizeof(uint8_t); // RGBA8
+        // TODO: Is this copy necessary?
+        auto err_out = cudaMemcpy2DToArray(dnr_out_cuda_array, 0, 0, dnr_out_data_ptr, out_bytes_per_pixel * m_width, out_bytes_per_pixel * m_width, m_height,
+                                       cudaMemcpyDeviceToDevice);
+        //std::cout << "Output error code: " << err_out << ": " << cudaGetErrorString(err_out) << "\n";
+        cudaGraphicsUnmapResources(NUM_GRAPHICS_RESOURCES, m_cgrs);
+    }
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -176,7 +185,13 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     m_texture_shader.use();
     glBindVertexArray(m_quadVAO);
     glDisable(GL_DEPTH_TEST);
-    glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
+
+    if (m_render_mode == Mode::DNR) {
+        glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
+    }
+    else {
+        glBindTexture(GL_TEXTURE_2D, m_texColorBuffer);
+    }
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
@@ -206,6 +221,15 @@ void Renderer::NotifyKeys(Key key, float deltaTime) {
 
             std::cout << "Finishing video recording\n";
         }
+        break;
+     case Key::C:
+        m_render_mode = Mode::COLOR;
+        break;
+     case Key::X:
+        m_render_mode = Mode::UV;
+        break;
+     case Key::Z:
+        m_render_mode = Mode::DNR;
         break;
     }
 }

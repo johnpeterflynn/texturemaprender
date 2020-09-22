@@ -214,7 +214,9 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
     }
-    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+
+    // TODO: Move this elsehwere (into scene.cpp?)
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
         free_mode = !free_mode;
     }
 }
