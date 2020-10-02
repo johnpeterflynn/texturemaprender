@@ -22,7 +22,8 @@ public:
 
     void RenderAsTexcoord(DNRenderer& dnr, int rows, int cols, bool writeout);
 
-    void WriteAsTexcoord(const int id, const int height, const int width);
+    void WriteAsTexcoord(const int height, const int width, const int id);
+    void WriteAsTexcoord(const int height, const int width, const std::string& filename = "");
     void WriteAsJpg(const int height, const int width, const std::string& filename = "");
 
     bool SetupWriteVideo(int height, int width, float framerate = 25.0f);

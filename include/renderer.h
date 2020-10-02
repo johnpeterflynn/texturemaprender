@@ -54,6 +54,7 @@ private:
     float* m_dnr_in_data_ptr;
 
     bool m_b_snapshot;
+    int m_num_snaps; // TODO: Remove this. It's temporary for naming snap files
 };
 
 #endif // RENDERER_H

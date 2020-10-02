@@ -15,6 +15,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
     , m_b_snapshot(false)
+    , m_num_snaps(0)
     , m_b_recording_video(false)
 {
     glGenFramebuffers(1, &m_framebuffer);
@@ -149,7 +150,16 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     scene.Draw(*active_shader);
 
     if (writeToFile) {
-        m_frameWriter.WriteAsTexcoord(pose_id, m_height, m_width);
+        m_frameWriter.WriteAsTexcoord(m_height, m_width, pose_id);
+    }
+
+    // TODO: Abstract this into a separate function/class
+    std::string snap_filename;
+    if (m_b_snapshot) {
+        // Take snapshot of uv coords
+        //snap_filename = dnr::time::getTimeAsString();
+        snap_filename = std::to_string(m_num_snaps);
+        m_frameWriter.WriteAsTexcoord(m_height, m_width, std::string("snapshots/uv/") + snap_filename);
     }
 
     if (m_render_mode == Mode::DNR) {
@@ -201,7 +211,6 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
         // TODO: Create a single class that controls the writing of files
         // TODO: Use a consistent method for concatenating file paths
 
-        std::string snap_filename = dnr::time::getTimeAsString();
         // Take a picture snapshot
         m_frameWriter.WriteAsJpg(m_height, m_width, std::string("snapshots/color/") + snap_filename);
 
@@ -215,6 +224,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
         scene.m_cam_loader.savePose(pose, std::string("snapshots/pose/") + snap_filename);
 
         m_b_snapshot = false;
+        m_num_snaps++;
     }
 
     if (m_b_recording_video && m_frameWriter.WriteVideoReady()) {
