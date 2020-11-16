@@ -26,7 +26,7 @@ public:
     void WriteAsTexcoord(const int height, const int width, const std::string& filename = "");
     void WriteAsJpg(const int height, const int width, const std::string& filename = "");
 
-    bool SetupWriteVideo(int height, int width, float framerate = 25.0f);
+    bool SetupWriteVideo(int height, int width, float framerate = 15.0f);
     void ShutdownWriteVideo();
     bool WriteVideoReady();
     void WriteFrameAsVideo(int height, int width);
