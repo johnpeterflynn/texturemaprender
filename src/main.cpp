@@ -18,16 +18,17 @@
 
 namespace po = boost::program_options;
 
-int run(const Scene::Params &params, std::string net_path,
-        std::string output_path, bool write_coords);
+int run(const Scene::Params &params,  int window_height, int window_width, std::string net_path,
+        std::string output_path, bool write_coords, bool record_video);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 1296;
-const unsigned int SCR_HEIGHT = 968;
+float c = 1;
+const unsigned int SCR_DEFAULT_WIDTH = 1296;//686;//int(1296 * c);//686;
+const unsigned int SCR_DEFAULT_HEIGHT = 968;//512;//nt(968 * c);//512;
 
 // timing
 float deltaTime = 0.0f;
@@ -44,7 +45,7 @@ int num_snapshots = 0;
 
 bool free_mode = true;
 
-KeyHandler key_handler(SCR_HEIGHT, SCR_WIDTH);
+KeyHandler *key_handler;
 
 int main(int argc, char *argv[])
 {
@@ -61,6 +62,9 @@ int main(int argc, char *argv[])
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
         ("free-mode", po::value<bool>()->default_value(free_mode), "allow free moving camera")
         ("pose-start", po::value<int>()->default_value(0), "start pose index")
+        ("record-video", po::value<bool>()->default_value(false), "record video on startup")
+        ("height", po::value<int>()->default_value(SCR_DEFAULT_HEIGHT), "Window render height")
+        ("width", po::value<int>()->default_value(SCR_DEFAULT_WIDTH), "Window render width")
     ;
 
     po::variables_map vm;
@@ -86,15 +90,18 @@ int main(int argc, char *argv[])
     scene_params.poses_dir = vm["poses"].as<std::string>();
 
     int r = run(scene_params,
+                vm["height"].as<int>(),
+                vm["width"].as<int>(),
                 vm["net"].as<std::string>(),
                 vm["output-path"].as<std::string>(),
-                vm["write-coords"].as<bool>());
+                vm["write-coords"].as<bool>(),
+                vm["record-video"].as<bool>());
 
     return r;
 }
 
-int run(const Scene::Params &scene_params, std::string net_path,
-        std::string output_path, bool write_coords)
+int run(const Scene::Params &scene_params, int window_height, int window_width, std::string net_path,
+        std::string output_path, bool write_coords, bool record_video)
 {
 
   int d;
@@ -120,14 +127,14 @@ int run(const Scene::Params &scene_params, std::string net_path,
     // --------------------
     // TODO: Make sure this works on non-apple screens
     // see https://stackoverflow.com/questions/36672935/why-retina-screen-coordinate-value-is-twice-the-value-of-pixel-value
-    int window_height = SCR_HEIGHT;
-    int window_width = SCR_WIDTH;
+    int glfw_window_height = window_height;
+    int glfw_window_width = window_width;
     // Handle retina displays mucking with window resolution
 #ifdef __APPLE__
-    window_height /= 2;
-    window_width /= 2;
+    glfw_window_height /= 2;
+    glfw_window_width /= 2;
 #endif
-    GLFWwindow* window = glfwCreateWindow(window_width, window_height, "uv-map Generator View", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(glfw_window_width, glfw_window_height, "uv-map Generator View", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -135,6 +142,10 @@ int run(const Scene::Params &scene_params, std::string net_path,
         return -1;
     }
     glfwMakeContextCurrent(window);
+
+    // TODO: Add this to the lifecycle of an object or larger scope
+    key_handler = new KeyHandler(window_height, window_width);
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
@@ -155,10 +166,10 @@ int run(const Scene::Params &scene_params, std::string net_path,
     // load models
     // -----------
     Scene scene(scene_params);
-    Renderer renderer(SCR_HEIGHT, SCR_WIDTH, net_path, output_path);
+    Renderer renderer(window_height, window_width, net_path, output_path, record_video);
 
-    key_handler.Subscribe(scene);
-    key_handler.Subscribe(renderer);
+    key_handler->Subscribe(scene);
+    key_handler->Subscribe(renderer);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -166,8 +177,9 @@ int run(const Scene::Params &scene_params, std::string net_path,
     // render loop
     // -----------
 
+    int MAX_POSES = 5000;
     while (!glfwWindowShouldClose(window)
-           && num_processed_poses < scene.m_cam_loader.getNumPoses())
+           && num_processed_poses < MAX_POSES)//scene.m_cam_loader.getNumPoses())
     {
         // per-frame time logic
         // --------------------
@@ -193,8 +205,8 @@ int run(const Scene::Params &scene_params, std::string net_path,
         }
     }
 
-    key_handler.Unsubscribe(scene);
-    key_handler.Unsubscribe(renderer);
+    key_handler->Unsubscribe(scene);
+    key_handler->Unsubscribe(renderer);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -209,7 +221,7 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    key_handler.ProcessKeystroke(window, deltaTime);
+    key_handler->ProcessKeystroke(window, deltaTime);
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
@@ -227,19 +239,19 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, width * 2, height * 2);
 }
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    key_handler.MouseCallback(window, xpos, ypos);
+    key_handler->MouseCallback(window, xpos, ypos);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    key_handler.ScrollCallback(window, xoffset, yoffset);
+    key_handler->ScrollCallback(window, xoffset, yoffset);
 }

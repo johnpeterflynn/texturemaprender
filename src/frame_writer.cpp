@@ -119,6 +119,11 @@ bool FrameWriter::WriteVideoReady() {
 void FrameWriter::WriteFrameAsVideo(int height, int width) {
     cv::Mat pixels(height, width, CV_8UC3 );
 
+    //use fast 4-byte alignment (default anyway) if possible
+    glPixelStorei(GL_PACK_ALIGNMENT, (pixels.step & 3) ? 1 : 4);
+
+    //set length of one complete row in destination data (doesn't need to equal img.cols)
+    glPixelStorei(GL_PACK_ROW_LENGTH, pixels.step/pixels.elemSize());
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data);
 

@@ -5,7 +5,7 @@
 #include "utils.h"
 
 Renderer::Renderer(int height, int width, const std::string &net_path,
-                   const std::string &output_path)
+                   const std::string &output_path, bool b_record_video)
     : m_height(height)
     , m_width(width)
     , m_render_mode(Renderer::Mode::DNR)
@@ -16,7 +16,6 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_dnr(m_height, m_width, net_path)
     , m_b_snapshot(false)
     , m_num_snaps(0)
-    , m_b_recording_video(false)
 {
     glGenFramebuffers(1, &m_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -89,6 +88,10 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     // TODO: Group this with other cuda methods
     // Allocate cuda data
     cudaMalloc((void**)(&m_dnr_in_data_ptr), 4 * sizeof(float) * m_width * m_height);
+    
+    if (b_record_video) {
+        StartRecordVideo();
+    }
 }
 
 Renderer::~Renderer() {    
@@ -115,7 +118,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     // view/projection transformations
     // TODO: Make m_camera private
-    glm::mat4 projection = scene.m_camera.GetProjectionMatrix(m_height, m_width, 0.1f, 100.0f);
+    glm::mat4 projection = scene.m_camera.GetProjectionMatrix(968, 1296, 0.1f, 100.0f);
 
     // TODO: Resolve need to rotate the view by -90 and -180 degrees in these
     //  two modes.
@@ -191,7 +194,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_texture_shader.use();
@@ -232,6 +235,18 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     }
 }
 
+void Renderer::StartRecordVideo() {
+    m_b_recording_video = m_frameWriter.SetupWriteVideo(m_height, m_width);
+    std::cout << "Starting video recording\n";
+}
+
+void Renderer::StopRecordVideo() {
+    m_frameWriter.ShutdownWriteVideo();
+    m_b_recording_video = false;
+
+    std::cout << "Finishing video recording\n"; 
+}
+
 void Renderer::NotifyKeys(Key key, float deltaTime) {
     switch(key) {
      case Key::P:
@@ -239,14 +254,10 @@ void Renderer::NotifyKeys(Key key, float deltaTime) {
         break;
      case Key::V:
         if (!m_b_recording_video) {
-            m_b_recording_video = m_frameWriter.SetupWriteVideo(m_height, m_width);
-            std::cout << "Starting video recording\n";
+	    StartRecordVideo();
         }
         else {
-            m_frameWriter.ShutdownWriteVideo();
-            m_b_recording_video = false;
-
-            std::cout << "Finishing video recording\n";
+	    StopRecordVideo();
         }
         break;
      case Key::C:

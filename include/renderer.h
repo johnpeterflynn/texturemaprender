@@ -14,13 +14,15 @@
 class Renderer : public KeyListener {
 public:
     Renderer(int height, int width, const std::string &net_path,
-             const std::string &output_path);
+             const std::string &output_path, bool record_video);
     ~Renderer();
 
     // TODO: Make params const
     void Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile);
 
 private:
+    void StartRecordVideo();
+    void StopRecordVideo();
     void NotifyKeys(Key key, float deltaTime);
 
     enum class Mode {
