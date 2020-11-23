@@ -114,7 +114,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     // The depth (z component) of any screen space coordinates should be >0 for
     //  visible fragments. Make sure background color is set to 0.0 so that
     //  neural textures can ignore them
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, float(Model::ZERO_MASK), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // view/projection transformations

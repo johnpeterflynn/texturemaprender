@@ -36,13 +36,18 @@ public:
     string directory;
     bool gammaCorrection;
 
+    unsigned int m_mask;
+    static const unsigned int ZERO_MASK = 0; // Mask value for pixels without fragments
+    static const unsigned int DEFAULT_MASK = 1;
+
     Model(bool gamma = false) {
         setup();
     }
 
     // constructor, expects a filepath to a 3D model.
-    Model(string const &path, bool gamma = false)
+    Model(string const &path, bool gamma = false, int mask = DEFAULT_MASK)
         : gammaCorrection(gamma)
+        , m_mask(mask)
     {
         setup();
         loadModel(path);
@@ -187,6 +192,9 @@ private:
                 vertex.Colors = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 //std::cout << "Warning: Mesh does not contain vertex colors\n";
             }
+
+            vertex.Mask = float(m_mask);
+
             /*
             // tangent
             if(mesh->mTangents[0])
