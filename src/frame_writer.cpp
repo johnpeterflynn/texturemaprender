@@ -79,7 +79,9 @@ void FrameWriter::WriteAsJpg(const int height, const int width, const std::strin
 
     std::cout << "Writing snapshot to " << file_path << "\n";
 
-    glReadBuffer(GL_FRONT);
+    // TODO: BUG: Needed to switch this to GL_BACK to read the same image as WriteAsTexcoord().
+    // Should they both be reading from the back buffer?
+    glReadBuffer(GL_BACK);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     // 90% quality, could be less
