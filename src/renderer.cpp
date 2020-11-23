@@ -11,7 +11,8 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_render_mode(Renderer::Mode::DNR)
     , m_uv_shader("src/shaders/vertexshader_texcoord.vs", "src/shaders/fragmentshader_texcoord.fs")
     , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
-    , m_texture_shader("src/shaders/vertexshader_texture.vs", "src/shaders/fragmentshader_texture.fs")
+    , m_scene_texture_shader("src/shaders/vertexshader_scenetexture.vs", "src/shaders/fragmentshader_scenetexture.fs")
+    , m_screen_texture_shader("src/shaders/vertexshader_screentexture.vs", "src/shaders/fragmentshader_screentexture.fs")
     , m_frameWriter(output_path)
     , m_dnr(m_height, m_width, net_path)
     , m_b_snapshot(false)
@@ -139,8 +140,12 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
 
     // TODO: A bit messy. How better to choose one of two member variables?
     Shader *active_shader;
-    if (m_render_mode == Mode::COLOR) {
+    if (m_render_mode == Mode::VERT_COLOR) {
         active_shader = &m_color_shader;
+
+    }
+    else if (m_render_mode == Mode::TEXTURE) {
+        active_shader = &m_scene_texture_shader;
     }
     else {
         active_shader = &m_uv_shader;
@@ -197,10 +202,9 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    m_texture_shader.use();
+    m_screen_texture_shader.use();
     glBindVertexArray(m_quadVAO);
     glDisable(GL_DEPTH_TEST);
-
     if (m_render_mode == Mode::DNR) {
         glBindTexture(GL_TEXTURE_2D, m_cudatexColorBuffer);
     }
@@ -261,10 +265,13 @@ void Renderer::NotifyKeys(Key key, float deltaTime) {
         }
         break;
      case Key::C:
-        m_render_mode = Mode::COLOR;
+        m_render_mode = Mode::VERT_COLOR;
         break;
      case Key::X:
         m_render_mode = Mode::UV;
+        break;
+     case Key::F:
+        m_render_mode = Mode::TEXTURE;
         break;
      case Key::Z:
         m_render_mode = Mode::DNR;

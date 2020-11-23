@@ -26,7 +26,7 @@ private:
     void NotifyKeys(Key key, float deltaTime);
 
     enum class Mode {
-        UV, COLOR, DNR
+        UV, VERT_COLOR, TEXTURE, DNR
     };
 
     const int m_height, m_width;
@@ -35,7 +35,8 @@ private:
 
     Shader m_uv_shader;
     Shader m_color_shader;
-    Shader m_texture_shader;
+    Shader m_scene_texture_shader;
+    Shader m_screen_texture_shader;
 
     FrameWriter m_frameWriter;
     bool m_b_recording_video;
