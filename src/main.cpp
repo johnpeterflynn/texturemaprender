@@ -177,9 +177,8 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
     // render loop
     // -----------
 
-    int MAX_POSES = 5000;
     while (!glfwWindowShouldClose(window)
-           && num_processed_poses < MAX_POSES)//scene.m_cam_loader.getNumPoses())
+           && num_processed_poses < scene.m_cam_loader.getNumPoses())
     {
         // per-frame time logic
         // --------------------
