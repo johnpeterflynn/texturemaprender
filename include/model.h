@@ -193,7 +193,7 @@ private:
                 //std::cout << "Warning: Mesh does not contain vertex colors\n";
             }
 
-            vertex.Mask = float(m_mask);
+            vertex.Mask = float(m_mask) / 255.0;
 
             /*
             // tangent

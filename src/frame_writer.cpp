@@ -33,6 +33,7 @@ void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool 
     float *heap_data = new float[height * width * channels];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
+    // TODO: Support channel 3 as mask
     glReadBuffer(GL_FRONT);
     glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
 
@@ -48,12 +49,12 @@ void FrameWriter::WriteAsTexcoord(const int height, const int width, const int i
 
 void FrameWriter::WriteAsTexcoord(const int height, const int width, const std::string& filename)
 {
-   int channels = 2;
+   int channels = 3;
    // TODO: Allocate and deallocate heap_data only once
    float *heap_data = new float[height * width * channels];
 
    glReadBuffer(GL_FRONT);
-   glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
+   glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
 
    CompressWriteFile((char*)heap_data,
                      height * width * channels * sizeof(float),
