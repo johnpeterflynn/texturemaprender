@@ -16,6 +16,7 @@ Scene::Scene(const Scene::Params &params)
     , m_num_submodules(67) // TODO: Set this from segs file
     , m_first_update(true)
     , m_current_pose_id(-1)
+    , m_pose_id_increment(1.0 / m_params.pose_interp_factor)
     , m_projection_mat(1.0f)
     , m_view_mat(1.0f)
     , m_model_mat(1.0f)
@@ -46,7 +47,8 @@ void Scene::Update(bool free_mode) {
             m_first_update = false;
         }
         else {
-            m_current_pose_id += 1.0 / m_params.pose_interp_factor;
+            m_current_pose_id += m_pose_id_increment;
+
         }
     }
 
@@ -82,7 +84,7 @@ bool Scene::isFinished() {
     // in a numbered sequence of poses. Note that we finish once m_current_pose_id is one
     // less than the number of poses since the referenced id is processed as soon as it
     // is set (in Update()).
-    return !(m_current_pose_id * m_params.pose_interp_factor < (m_cam_loader.getNumPoses() - 1));
+    return !(m_current_pose_id + m_pose_id_increment < (m_cam_loader.getNumPoses() - 1));
 }
 
 void Scene::Draw(Shader& shader) {

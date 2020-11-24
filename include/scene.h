@@ -58,6 +58,7 @@ private:
 
     bool m_first_update; // Allow setup functionality on the first call to Update()
     float m_current_pose_id; // Currently only relevant when free_mode == false
+    float m_pose_id_increment; // Amount that pose id increases on each Update()
 
     glm::mat4 m_projection_mat;
     glm::mat4 m_view_mat;
