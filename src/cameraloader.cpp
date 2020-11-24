@@ -95,6 +95,44 @@ glm::mat4 CameraLoader::getPose(int index) {
     return pose;
 }
 
+glm::mat4 CameraLoader::getInterpolatedPose(float index) {
+    int index_t1 = int(floor(index));
+    int index_t2 = int(ceil(index));
+    float delta = index - float(index_t1);
+
+    // TODO: Q: Why is it necessary to transpose here...
+    glm::mat4 m1 = glm::transpose(getPose(index_t1));
+    glm::mat4 m2 = glm::transpose(getPose(index_t2));
+    glm::quat qm1 = glm::quat_cast(m1);
+    glm::quat qm2 = glm::quat_cast(m2);
+    glm::quat qslerp = glm::slerp(qm1, qm2, delta);
+    glm::mat4 interpolated = glm::mat4_cast(qslerp);
+
+    glm::vec4 transformComp1 = glm::vec4(
+        m1[0][3],
+        m1[1][3],
+        m1[2][3],
+        m1[3][3]);
+
+    glm::vec4 transformComp2 = glm::vec4(
+        m2[0][3],
+        m2[1][3],
+        m2[2][3],
+        m2[3][3]);
+
+    glm::vec4 finalTrans = (float)(1.0 - delta) * transformComp1 + transformComp2 * delta;
+
+    interpolated[0][3] = finalTrans.x;
+    interpolated[1][3] = finalTrans.y;
+    interpolated[2][3] = finalTrans.z;
+    interpolated[3][3] = finalTrans.w;
+
+    // TODO: Q: ...and then undo it here?
+    interpolated = glm::transpose(interpolated);
+
+    return interpolated;
+}
+
 void CameraLoader::savePose(const glm::mat4& pose, const std::string& path) {
     saveMat4(pose, path);
 }

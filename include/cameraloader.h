@@ -15,6 +15,7 @@ public:
     void addPose(int id, const glm::mat4& pose);
     int getNumPoses();
     glm::mat4 getPose(int index);
+    glm::mat4 getInterpolatedPose(float index);
     void savePose(const glm::mat4& mat, const std::string& path);
 
     glm::mat4 m_intrinsics;

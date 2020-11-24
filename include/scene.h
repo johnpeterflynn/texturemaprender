@@ -55,7 +55,9 @@ private:
     bool m_b_hold_object;
     float m_hold_object_dist;
 
-    int m_current_pose_id; // Currently only relevant when free_mode == false
+    bool m_first_update; // Allow setup functionality on the first call to Update()
+    float m_current_pose_id; // Currently only relevant when free_mode == false
+    float m_pose_interp_factor;
 
     glm::mat4 m_projection_mat;
     glm::mat4 m_view_mat;

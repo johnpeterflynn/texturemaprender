@@ -14,7 +14,9 @@ Scene::Scene(const Scene::Params &params)
     , m_submodel(nullptr)
     , m_submodel_id(0)
     , m_num_submodules(67) // TODO: Set this from segs file
+    , m_first_update(true)
     , m_current_pose_id(-1)
+    , m_pose_interp_factor(1)
     , m_projection_mat(1.0f)
     , m_view_mat(1.0f)
     , m_model_mat(1.0f)
@@ -40,13 +42,22 @@ glm::mat4 Scene::GetModelMatrix() {
 void Scene::Update(bool free_mode) {
     // change state of whatever keeps track of the pose
     if (!free_mode) {
-        m_current_pose_id++;
+        if (m_first_update) {
+            m_current_pose_id = 0.0;
+            m_first_update = false;
+        }
+        else {
+            m_current_pose_id += 1.0 / m_pose_interp_factor;
+        }
     }
 
     updateViewMatrix(free_mode);
 }
 
 int Scene::GetCurrentPoseId() {
+    if (m_current_pose_id != floor(m_current_pose_id)) {
+        std::cout << "WARNING: Writing of interpolated poses to file not supported yet!\n";
+    }
     return m_current_pose_id;
 }
 
@@ -64,7 +75,7 @@ void Scene::updateViewMatrix(bool free_mode) {
         // Rotate to make +Z the up direction as often defined by 3D scans
         m_view_mat = glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f),
                            glm::vec3(1.0f, 0.0f, 0.0f))
-                * glm::inverse(m_cam_loader.getPose(m_current_pose_id));
+                * glm::inverse(m_cam_loader.getInterpolatedPose(m_current_pose_id));
     }
 }
 
