@@ -37,7 +37,6 @@ float lastFrame = 0.0f;
 // poses
 const float POSES_PERIOD_SEC = 1.0f / 2.0f;
 float lastPoseTime = 0.0f;
-int num_processed_poses = 0;
 bool pose_processed = false;
 glm::mat4 current_pose = glm::mat4(1.0f);
 
@@ -61,7 +60,7 @@ int main(int argc, char *argv[])
         ("output-path", po::value<std::string>(), "path to output rendered frames")
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
         ("free-mode", po::value<bool>()->default_value(free_mode), "allow free moving camera")
-        ("pose-start", po::value<int>()->default_value(0), "start pose index")
+        //("pose-start", po::value<int>()->default_value(0), "start pose index")
         ("record-video", po::value<bool>()->default_value(false), "record video on startup")
         ("height", po::value<int>()->default_value(SCR_DEFAULT_HEIGHT), "Window render height")
         ("width", po::value<int>()->default_value(SCR_DEFAULT_WIDTH), "Window render width")
@@ -81,7 +80,7 @@ int main(int argc, char *argv[])
     }
 
     free_mode = vm["free-mode"].as<bool>();
-    num_processed_poses = vm["pose-start"].as<int>();
+    //num_processed_poses = vm["pose-start"].as<int>();
 
     Scene::Params scene_params;
     scene_params.model_path = vm["model"].as<std::string>();
@@ -90,6 +89,10 @@ int main(int argc, char *argv[])
     scene_params.cam_params_dir = vm["cam-params"].as<std::string>();
     scene_params.poses_dir = vm["poses"].as<std::string>();
     scene_params.scene_mask = vm["scene-mask"].as<int>();
+
+    // TODO: Import these from one of the scene config files.
+    scene_params.projection_height = 968;
+    scene_params.projection_width = 1296;
 
     int r = run(scene_params,
                 vm["height"].as<int>(),
@@ -179,8 +182,7 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
     // render loop
     // -----------
 
-    while (!glfwWindowShouldClose(window)
-           && num_processed_poses < scene.m_cam_loader.getNumPoses())
+    while (!glfwWindowShouldClose(window) && !scene.isFinished())
     {
         // per-frame time logic
         // --------------------
@@ -192,18 +194,18 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
         // -----
         processInput(window);
 
+        // scene
+        // ------
+        scene.Update(free_mode);
+
         // render
         // ------
-        renderer.Draw(scene, num_processed_poses, free_mode, write_coords);
+        renderer.Draw(scene, write_coords);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
-
-        if (!free_mode) {
-            num_processed_poses++;
-        }
     }
 
     key_handler->Unsubscribe(scene);

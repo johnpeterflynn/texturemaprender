@@ -8,7 +8,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
                    const std::string &output_path, bool b_record_video)
     : m_height(height)
     , m_width(width)
-    , m_render_mode(Renderer::Mode::DNR)
+    , m_render_mode(Renderer::Mode::VERT_COLOR)
     , m_uv_shader("src/shaders/vertexshader_texcoord.vs", "src/shaders/fragmentshader_texcoord.fs")
     , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
     , m_scene_texture_shader("src/shaders/vertexshader_scenetexture.vs", "src/shaders/fragmentshader_scenetexture.fs")
@@ -106,7 +106,7 @@ Renderer::~Renderer() {
     cudaFree(m_dnr_in_data_ptr);
 }
 
-void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile) {
+void Renderer::Draw(Scene& scene, bool writeToFile) {
     // render
     // ------
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
@@ -118,25 +118,8 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // view/projection transformations
-    // TODO: Make m_camera private
-    glm::mat4 projection = scene.m_camera.GetProjectionMatrix(968, 1296, 0.1f, 100.0f);
-
-    // TODO: Resolve need to rotate the view by -90 and -180 degrees in these
-    //  two modes.
-    glm::mat4 view = glm::mat4(1.0f);
-    if (free_mode) {
-        // TODO: Make m_camera private
-        view = scene.m_camera.GetViewMatrix()
-                * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
-                              glm::vec3(1.0f, 0.0f, 0.0f));
-    }
-    else {
-        // TODO: Make m_camera_loader private
-        // Rotate to make +Z the up direction as often defined by 3D scans
-        view = glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f),
-                           glm::vec3(1.0f, 0.0f, 0.0f))
-                * glm::inverse(scene.m_cam_loader.getPose(pose_id));
-    }
+    glm::mat4 projection = scene.GetProjectionMatrix(0.1f, 100.0f);
+    glm::mat4 view = scene.GetViewMatrix();
 
     // TODO: A bit messy. How better to choose one of two member variables?
     Shader *active_shader;
@@ -158,7 +141,7 @@ void Renderer::Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile)
     scene.Draw(*active_shader);
 
     if (writeToFile) {
-        m_frameWriter.WriteAsTexcoord(m_height, m_width, pose_id);
+        m_frameWriter.WriteAsTexcoord(m_height, m_width, scene.GetCurrentPoseId());
     }
 
     // TODO: Abstract this into a separate function/class

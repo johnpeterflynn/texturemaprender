@@ -18,7 +18,7 @@ public:
     ~Renderer();
 
     // TODO: Make params const
-    void Draw(Scene& scene, int pose_id, bool free_mode, bool writeToFile);
+    void Draw(Scene& scene, bool writeToFile);
 
 private:
     void StartRecordVideo();

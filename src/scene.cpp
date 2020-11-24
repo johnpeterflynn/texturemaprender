@@ -5,7 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 Scene::Scene(const Scene::Params &params)
-    : m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
+    : m_params(params)
+    , m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
     , m_cam_loader(params.cam_params_dir, params.poses_dir)
     , m_model(params.model_path, params.aggregation_path, params.segs_path, params.scene_mask)
     , m_movement_speed(2.5f)
@@ -13,24 +14,67 @@ Scene::Scene(const Scene::Params &params)
     , m_submodel(nullptr)
     , m_submodel_id(0)
     , m_num_submodules(67) // TODO: Set this from segs file
+    , m_current_pose_id(-1)
+    , m_projection_mat(1.0f)
+    , m_view_mat(1.0f)
+    , m_model_mat(1.0f)
 
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
 }
 
-/*
-glm::mat4 Scene::GetProjectionMatrix() {
-    return glm::mat4(1.0f);
+
+glm::mat4 Scene::GetProjectionMatrix(const float near, const float far) {
+    return m_camera.GetProjectionMatrix(m_params.projection_height, m_params.projection_width, near, far);
 }
 
 glm::mat4 Scene::GetViewMatrix() {
-    return glm::mat4(1.0f);
+    return m_view_mat;
 }
-
+/*
 glm::mat4 Scene::GetModelMatrix() {
     return glm::mat4(1.0f);
 }
 */
+
+void Scene::Update(bool free_mode) {
+    // change state of whatever keeps track of the pose
+    if (!free_mode) {
+        m_current_pose_id++;
+    }
+
+    updateViewMatrix(free_mode);
+}
+
+int Scene::GetCurrentPoseId() {
+    return m_current_pose_id;
+}
+
+void Scene::updateViewMatrix(bool free_mode) {
+    // TODO: Resolve need to rotate the view by -90 and -180 degrees in these
+    //  two modes.
+    if (free_mode) {
+        // TODO: Make m_camera private
+        m_view_mat = m_camera.GetViewMatrix()
+                * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
+                              glm::vec3(1.0f, 0.0f, 0.0f));
+    }
+    else {
+        // TODO: Make m_camera_loader private
+        // Rotate to make +Z the up direction as often defined by 3D scans
+        m_view_mat = glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f),
+                           glm::vec3(1.0f, 0.0f, 0.0f))
+                * glm::inverse(m_cam_loader.getPose(m_current_pose_id));
+    }
+}
+
+bool Scene::isFinished() {
+    // True when the final pose_id is reached. Currently defined as the the final poses
+    // in a numbered sequence of poses. Note that we finish once m_current_pose_id is one
+    // less than the number of poses since the referenced id is processed as soon as it
+    // is set (in Update()).
+    return !(m_current_pose_id < (m_cam_loader.getNumPoses() - 1));
+}
 
 void Scene::Draw(Shader& shader) {
     glm::mat4 model = glm::mat4(1.0);
