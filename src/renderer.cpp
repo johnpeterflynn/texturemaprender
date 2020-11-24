@@ -140,16 +140,14 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
 
     scene.Draw(*active_shader);
 
-    if (writeToFile) {
-        m_frameWriter.WriteAsTexcoord(m_height, m_width, scene.GetCurrentPoseId());
-    }
-
     // TODO: Abstract this into a separate function/class
     std::string snap_filename;
-    if (m_b_snapshot) {
+    //snap_filename = dnr::time::getTimeAsString();
+    // TODO: Replace m_num_snaps with scene::GetCurrentPoseId(). At the moment, can't be sure GetCurrentPoseId() won't
+    // suffer from rounding errors due to interpolation
+    snap_filename = std::to_string(m_num_snaps);
+    if (m_b_snapshot || (writeToFile && (m_render_mode == Mode::UV))) {
         // Take snapshot of uv coords
-        //snap_filename = dnr::time::getTimeAsString();
-        snap_filename = std::to_string(m_num_snaps);
         m_frameWriter.WriteAsTexcoord(m_height, m_width, std::string("snapshots/uv/") + snap_filename);
     }
 
@@ -197,13 +195,15 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-    if (m_b_snapshot) {
+    if (m_b_snapshot || (writeToFile && (m_render_mode != Mode::UV))) {
         // TODO: Create a single class that controls the writing of files
         // TODO: Use a consistent method for concatenating file paths
 
         // Take a picture snapshot
         m_frameWriter.WriteAsJpg(m_height, m_width, std::string("snapshots/color/") + snap_filename);
+    }
 
+    if(m_b_snapshot || writeToFile) {
         // TODO: Handle matrix transformations in a separate class
         auto pose = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
                 * glm::inverse(scene.m_camera.GetViewMatrix())
@@ -213,6 +213,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
         // Take a pose snapshot
         scene.m_cam_loader.savePose(pose, std::string("snapshots/pose/") + snap_filename);
 
+        // Clear snapshot flags
         m_b_snapshot = false;
         m_num_snaps++;
     }
