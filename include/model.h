@@ -40,7 +40,7 @@ public:
     static const unsigned int ZERO_MASK = 0; // Mask value for pixels without fragments
     static const unsigned int DEFAULT_MASK = 1;
 
-    Model(bool gamma = false) {
+    Model(bool gamma = false, int mask = DEFAULT_MASK) {
         setup();
     }
 
