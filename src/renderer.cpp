@@ -5,10 +5,10 @@
 #include "utils.h"
 
 Renderer::Renderer(int height, int width, const std::string &net_path,
-                   const std::string &output_path, bool b_record_video)
+                   const std::string &output_path, bool b_record_video, Renderer::Mode render_mode)
     : m_height(height)
     , m_width(width)
-    , m_render_mode(Renderer::Mode::VERT_COLOR)
+    , m_render_mode(render_mode)
     , m_uv_shader("src/shaders/vertexshader_texcoord.vs", "src/shaders/fragmentshader_texcoord.fs")
     , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
     , m_scene_texture_shader("src/shaders/vertexshader_scenetexture.vs", "src/shaders/fragmentshader_scenetexture.fs")

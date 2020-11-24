@@ -19,7 +19,7 @@
 namespace po = boost::program_options;
 
 int run(const Scene::Params &params,  int window_height, int window_width, std::string net_path,
-        std::string output_path, bool write_coords, bool record_video);
+        std::string output_path, bool write_coords, bool record_video, Renderer::Mode render_mode);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
         ("width", po::value<int>()->default_value(SCR_DEFAULT_WIDTH), "Window render width")
         ("scene-mask", po::value<int>()->default_value(Model::DEFAULT_MASK), "ID for scene's associated texture map. Only needed for UV map generation")
         ("interp-factor", po::value<float>()->default_value(1.0), "Number of interpolated poses per provided pose. 1.0 means no interpolation.")
+        ("render-mode", po::value<char>()->default_value('u'), "Render mode at start-up. Possibilities are u (uv coords), v (vertex color), t (texture) and d (DNR)")
     ;
 
     po::variables_map vm;
@@ -92,6 +93,22 @@ int main(int argc, char *argv[])
     scene_params.scene_mask = vm["scene-mask"].as<int>();
     scene_params.pose_interp_factor = vm["interp-factor"].as<float>();
 
+    Renderer::Mode render_mode;
+    switch(vm["render-mode"].as<char>()) {
+    case 'u':
+        render_mode = Renderer::Mode::UV;
+        break;
+    case 'v':
+        render_mode = Renderer::Mode::VERT_COLOR;
+        break;
+    case 't':
+        render_mode = Renderer::Mode::TEXTURE;
+        break;
+    case 'd':
+        render_mode = Renderer::Mode::DNR;
+        break;
+    }
+
     // TODO: Import these from one of the scene config files.
     scene_params.projection_height = 968;
     scene_params.projection_width = 1296;
@@ -102,13 +119,14 @@ int main(int argc, char *argv[])
                 vm["net"].as<std::string>(),
                 vm["output-path"].as<std::string>(),
                 vm["write-coords"].as<bool>(),
-                vm["record-video"].as<bool>());
+                vm["record-video"].as<bool>(),
+                render_mode);
 
     return r;
 }
 
 int run(const Scene::Params &scene_params, int window_height, int window_width, std::string net_path,
-        std::string output_path, bool write_coords, bool record_video)
+        std::string output_path, bool write_coords, bool record_video, Renderer::Mode render_mode)
 {
 
   int d;
@@ -173,7 +191,7 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
     // load models
     // -----------
     Scene scene(scene_params);
-    Renderer renderer(window_height, window_width, net_path, output_path, record_video);
+    Renderer renderer(window_height, window_width, net_path, output_path, record_video, render_mode);
 
     key_handler->Subscribe(scene);
     key_handler->Subscribe(renderer);

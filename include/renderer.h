@@ -13,8 +13,12 @@
 
 class Renderer : public KeyListener {
 public:
+    enum class Mode {
+        UV, VERT_COLOR, TEXTURE, DNR
+    };
+
     Renderer(int height, int width, const std::string &net_path,
-             const std::string &output_path, bool record_video);
+             const std::string &output_path, bool record_video, Mode render_mode);
     ~Renderer();
 
     // TODO: Make params const
@@ -24,10 +28,6 @@ private:
     void StartRecordVideo();
     void StopRecordVideo();
     void NotifyKeys(Key key, float deltaTime);
-
-    enum class Mode {
-        UV, VERT_COLOR, TEXTURE, DNR
-    };
 
     const int m_height, m_width;
 
