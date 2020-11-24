@@ -54,10 +54,9 @@ void Scene::Update(bool free_mode) {
 }
 
 int Scene::GetCurrentPoseId() {
-    if (m_current_pose_id != floor(m_current_pose_id)) {
-        std::cout << "WARNING: Writing of interpolated poses to file not supported yet!\n";
-    }
-    return m_current_pose_id;
+    // TODO: Find a way to better reflect the indices of the real poses. This blurs their definition
+    // when pose_interp_factor != 1.0
+    return m_current_pose_id * m_params.pose_interp_factor;
 }
 
 void Scene::updateViewMatrix(bool free_mode) {
