@@ -18,6 +18,7 @@ public:
         int scene_mask;
         int projection_height;
         int projection_width;
+        float pose_interp_factor;
 
     };
     Scene(const Params &params);
@@ -57,7 +58,6 @@ private:
 
     bool m_first_update; // Allow setup functionality on the first call to Update()
     float m_current_pose_id; // Currently only relevant when free_mode == false
-    float m_pose_interp_factor;
 
     glm::mat4 m_projection_mat;
     glm::mat4 m_view_mat;

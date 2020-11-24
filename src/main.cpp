@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
         ("height", po::value<int>()->default_value(SCR_DEFAULT_HEIGHT), "Window render height")
         ("width", po::value<int>()->default_value(SCR_DEFAULT_WIDTH), "Window render width")
         ("scene-mask", po::value<int>()->default_value(Model::DEFAULT_MASK), "ID for scene's associated texture map. Only needed for UV map generation")
+        ("interp-factor", po::value<float>()->default_value(1.0), "Number of interpolated poses per provided pose. 1.0 means no interpolation.")
     ;
 
     po::variables_map vm;
@@ -89,6 +90,7 @@ int main(int argc, char *argv[])
     scene_params.cam_params_dir = vm["cam-params"].as<std::string>();
     scene_params.poses_dir = vm["poses"].as<std::string>();
     scene_params.scene_mask = vm["scene-mask"].as<int>();
+    scene_params.pose_interp_factor = vm["interp-factor"].as<float>();
 
     // TODO: Import these from one of the scene config files.
     scene_params.projection_height = 968;

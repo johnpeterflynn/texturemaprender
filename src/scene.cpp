@@ -16,7 +16,6 @@ Scene::Scene(const Scene::Params &params)
     , m_num_submodules(67) // TODO: Set this from segs file
     , m_first_update(true)
     , m_current_pose_id(-1)
-    , m_pose_interp_factor(1)
     , m_projection_mat(1.0f)
     , m_view_mat(1.0f)
     , m_model_mat(1.0f)
@@ -47,7 +46,7 @@ void Scene::Update(bool free_mode) {
             m_first_update = false;
         }
         else {
-            m_current_pose_id += 1.0 / m_pose_interp_factor;
+            m_current_pose_id += 1.0 / m_params.pose_interp_factor;
         }
     }
 
