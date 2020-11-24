@@ -82,7 +82,7 @@ bool Scene::isFinished() {
     // in a numbered sequence of poses. Note that we finish once m_current_pose_id is one
     // less than the number of poses since the referenced id is processed as soon as it
     // is set (in Update()).
-    return !(m_current_pose_id < (m_cam_loader.getNumPoses() - 1));
+    return !(m_current_pose_id * m_params.pose_interp_factor < (m_cam_loader.getNumPoses() - 1));
 }
 
 void Scene::Draw(Shader& shader) {
