@@ -15,6 +15,7 @@ public:
         std::string segs_path;
         std::string cam_params_dir;
         std::string poses_dir;
+        int scene_mask;
 
     };
     Scene(const Params &params);

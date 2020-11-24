@@ -6,7 +6,7 @@
 class SceneModel : public Model {
 public:
     SceneModel(string const &model_path, string const &aggregation_path,
-               string const &segs_path);
+               string const &segs_path, int mask = Model::DEFAULT_MASK);
 
     std::shared_ptr<Model> extractLabeledSubmodel(int id);
 

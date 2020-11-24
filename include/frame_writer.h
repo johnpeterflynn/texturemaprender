@@ -32,8 +32,12 @@ public:
     void WriteFrameAsVideo(int height, int width);
 
 private:
+    void ReadBufferAsTexcoord(float* data, int width, int height);
     static void CompressWriteFile(char *buf, int size,
                                     const std::string& filename);
+
+    static const unsigned int NUM_UV_CHANNELS = 3;
+    static const unsigned int NUM_COLOR_CHANNELS = 3;
 
     fs::path m_output_path;
     cv::VideoWriter m_video_writer;

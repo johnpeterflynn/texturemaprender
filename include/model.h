@@ -109,6 +109,8 @@ private:
         vector<Vertex> vertices;
         vector<unsigned int> indices;
         vector<Texture> textures;
+
+        std::cout << "Creating mesh from directory " << directory << " with mask " << m_mask << "\n";
 /*
         std::ifstream agg_s("resources/scan0/scene0000_00_vh_clean.aggregation.json");
         json jagg = json::parse(agg_s);
@@ -291,7 +293,6 @@ private:
         }
 */
 
-        std::cout << "finished add faces\n";
         // process materials
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         // we assume a convention for sampler names in the shaders. Each diffuse texture should be named

@@ -5,7 +5,7 @@
 using json = nlohmann::json;
 
 SceneModel::SceneModel(string const &model_path, string const &aggregation_path,
-                       string const &segs_path)
+                       string const &segs_path, int mask)
     : Model(model_path)
     , m_aggregation_path(aggregation_path)
     , m_segs_path(segs_path)

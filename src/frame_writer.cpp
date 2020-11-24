@@ -27,15 +27,23 @@ void FrameWriter::setPath(const std::string& output_path) {
    m_output_path = output_path;
 }
 
+void FrameWriter::ReadBufferAsTexcoord(float* data, int width, int height) {
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, data);
+
+    // OpenGL requires floats between 0 and 1 so convert float back to an integer
+    // index
+    for (int i = NUM_UV_CHANNELS - 1; i < height * width * NUM_UV_CHANNELS; i += NUM_UV_CHANNELS) {
+        data[i] = data[i] * 255.0;
+    }
+}
+
 void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool writeout) {
-    int channels = 2;
     // TODO: Allocate and deallocate heap_data only once
-    float *heap_data = new float[height * width * channels];
+    float *heap_data = new float[height * width * NUM_UV_CHANNELS];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
-    // TODO: Support channel 3 as mask
-    glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, width, height, GL_RG, GL_FLOAT, heap_data);
+    ReadBufferAsTexcoord(heap_data, width, height);
 
     dnr.render(heap_data, height, width, writeout);
 
@@ -49,23 +57,20 @@ void FrameWriter::WriteAsTexcoord(const int height, const int width, const int i
 
 void FrameWriter::WriteAsTexcoord(const int height, const int width, const std::string& filename)
 {
-   int channels = 3;
    // TODO: Allocate and deallocate heap_data only once
-   float *heap_data = new float[height * width * channels];
+   float *heap_data = new float[height * width * NUM_UV_CHANNELS];
 
-   glReadBuffer(GL_FRONT);
-   glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, heap_data);
+   ReadBufferAsTexcoord(heap_data, width, height);
 
    CompressWriteFile((char*)heap_data,
-                     height * width * channels * sizeof(float),
+                     height * width * NUM_UV_CHANNELS * sizeof(float),
                      filename);
 
    delete [] heap_data;
 }
 
 void FrameWriter::WriteAsJpg(const int height, const int width, const std::string& filename) {
-    int num_jpg_channels = 3;
-    GLchar data[height * width * num_jpg_channels]; // # pixels x # floats per pixel
+    GLchar data[height * width * NUM_COLOR_CHANNELS]; // # pixels x # floats per pixel
     std::string file_path;
 
     if (filename.empty()) {
@@ -86,7 +91,7 @@ void FrameWriter::WriteAsJpg(const int height, const int width, const std::strin
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     // 90% quality, could be less
-    stbi_write_jpg(file_path.c_str(), width, height, num_jpg_channels, data, 100);
+    stbi_write_jpg(file_path.c_str(), width, height, NUM_COLOR_CHANNELS, data, 100);
 }
 
 bool FrameWriter::SetupWriteVideo(int height, int width, float framerate) {

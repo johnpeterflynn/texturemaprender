@@ -81,7 +81,7 @@ void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
 //    timer.checkpoint("index");
     // TODO: More efficient way to remove/ignore extra data?
     // Remode Blue and Alpha data added by opengl
-    input = input.index({torch::indexing::Ellipsis, torch::indexing::Slice(torch::indexing::None, 2)});
+    input = input.index({torch::indexing::Ellipsis, torch::indexing::Slice(torch::indexing::None, 3)});
 
 //    timer.checkpoint("pass input to cuda");
 

@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
         ("record-video", po::value<bool>()->default_value(false), "record video on startup")
         ("height", po::value<int>()->default_value(SCR_DEFAULT_HEIGHT), "Window render height")
         ("width", po::value<int>()->default_value(SCR_DEFAULT_WIDTH), "Window render width")
+        ("scene-mask", po::value<int>()->default_value(Model::DEFAULT_MASK), "ID for scene's associated texture map. Only needed for UV map generation")
     ;
 
     po::variables_map vm;
@@ -88,6 +89,7 @@ int main(int argc, char *argv[])
     scene_params.segs_path = vm["segs-path"].as<std::string>();
     scene_params.cam_params_dir = vm["cam-params"].as<std::string>();
     scene_params.poses_dir = vm["poses"].as<std::string>();
+    scene_params.scene_mask = vm["scene-mask"].as<int>();
 
     int r = run(scene_params,
                 vm["height"].as<int>(),
