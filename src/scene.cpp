@@ -33,6 +33,8 @@ Scene::Scene(const Scene::Params &params)
     , m_projection_mat(1.0f)
     , m_view_mat(1.0f)
     , m_model_mat(1.0f)
+    , m_selected_library_model(-1)
+    , m_selected_instantiated_model(-1)
 
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
@@ -230,14 +232,21 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
         break;
     case Key::O:
         if (!is_already_pressed) {
-            if (selected_model && !m_b_hold_object) {
-                std::cout << "Grabbing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
-                m_hold_object_dist = glm::distance(m_camera.m_position, selected_model->m_position);
-                m_b_hold_object = true;
+            if (m_selected_instantiated_model >= 0) {
+                if (selected_model && !m_b_hold_object) {
+                    std::cout << "Grabbing object " << getSelectedInstanceModelDescriptor().name()
+                              << " " << m_selected_instantiated_model << "\n";
+                    m_hold_object_dist = glm::distance(m_camera.m_position, selected_model->m_position);
+                    m_b_hold_object = true;
+                }
+                else {
+                    std::cout << "Releasing object " << getSelectedInstanceModelDescriptor().name()
+                              << " " << m_selected_instantiated_model << "\n";
+                    m_b_hold_object = false;
+                }
             }
             else {
-                std::cout << "Releasing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
-                m_b_hold_object = false;
+                std::cout << "WARNING: There are no instantiated objects " << "\n";
             }
         }
         break;
@@ -255,16 +264,40 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
             }
         }
         break;
+    case Key::N:
+        if (!is_already_pressed) {
+            if(m_selected_instantiated_model >= 0) {
+                deleteInstanceModel(m_selected_instantiated_model);
+
+                // Implicitly sets m_selected_instantiated_model to -1 when no more instance models exist
+                int new_id = min(m_selected_instantiated_model, int(m_instantiated_models.size()) - 1);
+                setSelectedInstanceModel(new_id);
+            }
+            else {
+                std::cout << "WARNING: There are no instantiated objects " << "\n";
+            }
+        }
+        break;
     case Key::NINE:
         if (!is_already_pressed) {
-            setSelectedInstanceModel(std::max(0, m_selected_instantiated_model - 1));
-            std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+            if (m_selected_instantiated_model >= 0) {
+                setSelectedInstanceModel(std::max(0, m_selected_instantiated_model - 1));
+                std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+            }
+            else {
+                std::cout << "WARNING: There are no instantiated objects " << "\n";
+            }
         }
         break;
     case Key::ZERO:
         if (!is_already_pressed) {
-            setSelectedInstanceModel(std::min(m_selected_instantiated_model + 1, int(m_instantiated_models.size()) - 1));
-            std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+            if (m_selected_instantiated_model >= 0) {
+                setSelectedInstanceModel(std::min(m_selected_instantiated_model + 1, int(m_instantiated_models.size()) - 1));
+                std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+            }
+            else {
+                std::cout << "WARNING: There are no instantiated objects " << "\n";
+            }
         }
         break;
     }
@@ -302,6 +335,11 @@ void Scene::addInstanceModel(std::shared_ptr<Model> model, ModelDescriptor desc)
     m_instantiated_models.push_back(model);
     // Add model descriptor to list of instantiated descriptors
     m_instantiated_model_descriptors.push_back(desc);
+}
+
+void Scene::deleteInstanceModel(int index) {
+    m_instantiated_models.erase(m_instantiated_models.begin()+index);
+    m_instantiated_model_descriptors.erase(m_instantiated_model_descriptors.begin()+index);
 }
 
 void Scene::NotifyMouse(double xoffset, double yoffset)

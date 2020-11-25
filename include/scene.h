@@ -63,6 +63,7 @@ public:
     std::shared_ptr<Model> getSelectedInstanceModel();
     void setSelectedInstanceModel(int id);
     void addInstanceModel(std::shared_ptr<Model> model, ModelDescriptor desc);
+    void deleteInstanceModel(int index);
 
    Camera m_camera;
    CameraLoader m_cam_loader;
