@@ -4,6 +4,21 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+
+ModelDescriptor::ModelDescriptor(std::string name, std::string path)
+    : m_name(name)
+    , m_path(path)
+    , m_b_loadable(true)
+{
+}
+
+ModelDescriptor::ModelDescriptor(std::string name, int id)
+    : m_name(name)
+    , m_id(id)
+    , m_b_loadable(false)
+{
+}
+
 Scene::Scene(const Scene::Params &params)
     : m_params(params)
     , m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
@@ -11,9 +26,6 @@ Scene::Scene(const Scene::Params &params)
     , m_model(params.model_path, params.aggregation_path, params.segs_path, params.scene_mask)
     , m_movement_speed(2.5f)
     , m_b_hold_object(false)
-    , m_submodel(nullptr)
-    , m_submodel_id(0)
-    , m_num_submodules(67) // TODO: Set this from segs file
     , m_first_update(true)
     , m_current_pose_id(-1)
     , m_pose_id_increment(1.0 / m_params.pose_interp_factor)
@@ -23,6 +35,12 @@ Scene::Scene(const Scene::Params &params)
 
 {
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
+
+    auto model_semantic_labels = m_model.loadSegmentLabels();
+    for (int i = 0; i < model_semantic_labels.size(); i++) {
+        ModelDescriptor descriptor(model_semantic_labels[i], i);
+        m_model_library.push_back(descriptor);
+    }
 }
 
 
@@ -95,12 +113,18 @@ void Scene::Draw(Shader& shader) {
     shader.setMat4("model", model);
     m_model.Draw(shader);
 
-    if (m_b_hold_object) {
-        m_submodel->m_position = m_camera.m_position
+    std::shared_ptr<Model> selected_model = nullptr;
+    if (m_instantiated_models.size() > 0) {
+        selected_model = getSelectedInstanceModel();
+    }
+
+    if (selected_model && m_b_hold_object) {
+        selected_model->m_position = m_camera.m_position
                 + m_hold_object_dist * m_camera.Front;
     }
 
-    if (m_submodel) {
+    if (selected_model) {
+        std::cout << "Drawing table\n";
         // TODO: Use a 4x4 matrix in object
         // TODO: Find the source of this weird issue where I need to rotate
         //  everything by 90 degrees
@@ -109,18 +133,23 @@ void Scene::Draw(Shader& shader) {
         model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
                             glm::vec3(1.0f, 0.0f, 0.0f))
                 *
-                glm::translate(m_submodel->m_position)
-                * glm::rotate(m_submodel->m_pitch, glm::vec3(0.0f, 0.0f, 1.0f))
-                * glm::rotate(m_submodel->m_yaw, glm::vec3(0.0f, 1.0f, 0.0f))
+                glm::translate(selected_model->m_position)
+                * glm::rotate(selected_model->m_pitch, glm::vec3(0.0f, 0.0f, 1.0f))
+                * glm::rotate(selected_model->m_yaw, glm::vec3(0.0f, 1.0f, 0.0f))
                 * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
                               glm::vec3(1.0f, 0.0f, 0.0f));
         shader.setMat4("model", model);
-        m_submodel->Draw(shader);
+        selected_model->Draw(shader);
     }
 }
 
 void Scene::NotifyKeys(Key key, float deltaTime) {
     float velocity = m_movement_speed * deltaTime;
+
+    std::shared_ptr<Model> selected_model = nullptr;
+    if (m_instantiated_models.size() > 0) {
+        selected_model = getSelectedInstanceModel();
+    }
 
     // TODO: Optionally debounce the keys
     switch(key) {
@@ -143,57 +172,112 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
         m_camera.ProcessKeyboard(DOWN, deltaTime);
         break;
      case Key::I:
-        m_submodel->m_position.x += velocity;
+        if (selected_model)
+            selected_model->m_position.x += velocity;
         break;
      case Key::J:
-        m_submodel->m_position.y += velocity;
+        if (selected_model)
+            selected_model->m_position.y += velocity;
         break;
      case Key::K:
-        m_submodel->m_position.x -= velocity;
+        if (selected_model)
+            selected_model->m_position.x -= velocity;
         break;
      case Key::L:
-        m_submodel->m_position.y -= velocity;
+        if (selected_model)
+            selected_model->m_position.y -= velocity;
         break;
     case Key::Y:
-        m_submodel->m_pitch += velocity;
+        if (selected_model)
+            selected_model->m_pitch += velocity;
         break;
     case Key::H:
-        m_submodel->m_pitch -= velocity;
+        if (selected_model)
+            selected_model->m_pitch -= velocity;
         break;
     case Key::T:
-        m_submodel->m_yaw += velocity;
+        if (selected_model)
+            selected_model->m_yaw += velocity;
         break;
     case Key::G:
-        m_submodel->m_yaw -= velocity;
+        if (selected_model)
+            selected_model->m_yaw -= velocity;
         break;
     case Key::R:
-        // Reset angles
-        m_submodel->m_pitch = 0;
-        m_submodel->m_yaw = 0;
+        if (selected_model) {
+            // Reset angles
+            selected_model->m_pitch = 0;
+            selected_model->m_yaw = 0;
+        }
         break;
     case Key::MINUS:
-        m_submodel_id = std::max(0, m_submodel_id - 1);
-        std::cout << "ID: " << m_submodel_id << "\n";
+        setSelectedLibraryModel(std::max(0, m_selected_library_model - 1));
+        std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
         break;
     case Key::EQUAL:
-        m_submodel_id = std::min(m_submodel_id + 1, m_num_submodules - 1);
-        std::cout << "ID: " << m_submodel_id << "\n";
+        setSelectedLibraryModel(std::min(m_selected_library_model + 1, int(m_model_library.size()) - 1));
+        std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
         break;
     case Key::O:
-        if (!m_b_hold_object) {
-            std::cout << "Grabbing object " << m_submodel_id << "\n";
-            m_hold_object_dist = glm::distance(m_camera.m_position, m_submodel->m_position);
+        if (selected_model && !m_b_hold_object) {
+            std::cout << "Grabbing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
+            m_hold_object_dist = glm::distance(m_camera.m_position, selected_model->m_position);
             m_b_hold_object = true;
         }
         else {
-            std::cout << "Releasing object " << m_submodel_id << "\n";
+            std::cout << "Releasing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
             m_b_hold_object = false;
         }
         break;
     case Key::M:
-        m_submodel = m_model.extractLabeledSubmodel(m_submodel_id);
+        //m_submodel = m_model.extractLabeledSubmodel(m_submodel_id);
+
+        // Get descriptor for currently selected model
+        ModelDescriptor desc = getSelectedLibraryModelDescriptor();
+        if (!desc.m_b_loadable) {
+            // Create that model
+            std::shared_ptr<Model> new_model = m_model.extractLabeledSubmodel(m_selected_library_model);
+            // Add new model
+            addInstanceModel(new_model, desc);
+            // Set focus to that instantiated model
+            setSelectedInstanceModel(m_instantiated_models.size() - 1);
+        }
         break;
     }
+}
+
+ModelDescriptor Scene::getSelectedLibraryModelDescriptor() {
+    return m_model_library[m_selected_library_model];
+}
+
+void Scene::setSelectedLibraryModel(int id) {
+    m_selected_library_model = id;
+}
+
+ModelDescriptor Scene::getSelectedInstanceModelDescriptor() {
+    if (m_selected_instantiated_model >= m_instantiated_models.size()) {
+        std::cout << "ERROR: Attempting to select descriptor for instance model " << m_selected_instantiated_model << " which is out of range\n";
+    }
+    return m_instantiated_model_descriptors[m_selected_instantiated_model];
+}
+
+std::shared_ptr<Model> Scene::getSelectedInstanceModel() {
+    if (m_selected_instantiated_model >= m_instantiated_models.size()) {
+        std::cout << "ERROR: Attempting to select instance model " << m_selected_instantiated_model << " which is out of range\n";
+        return nullptr;
+    }
+    return m_instantiated_models[m_selected_instantiated_model];
+}
+
+void Scene::setSelectedInstanceModel(int id) {
+    m_selected_instantiated_model = id;
+}
+
+void Scene::addInstanceModel(std::shared_ptr<Model> model, ModelDescriptor desc) {
+    // Add model to list of instantiated models
+    m_instantiated_models.push_back(model);
+    // Add model descriptor to list of instantiated descriptors
+    m_instantiated_model_descriptors.push_back(desc);
 }
 
 void Scene::NotifyMouse(double xoffset, double yoffset)

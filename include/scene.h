@@ -7,6 +7,29 @@
 #include "cameraloader.h"
 #include "scenemodel.h"
 
+class ModelDescriptor {
+public:
+    ModelDescriptor(std::string name, std::string path);
+    ModelDescriptor(std::string name, int id);
+
+    std::string m_name;
+    std::string m_path;
+    int m_id;
+    bool m_b_loadable;
+
+    std::string name() {
+        return m_name;
+    }
+
+    std::string path() {
+        return m_path;
+    }
+
+    int id() {
+        return m_id;
+    }
+};
+
 class Scene : /*public IScene,*/ public KeyListener {
 public:
     struct Params {
@@ -33,6 +56,13 @@ public:
 
     bool isFinished();
 
+    ModelDescriptor getSelectedLibraryModelDescriptor();
+    void setSelectedLibraryModel(int id);
+    ModelDescriptor getSelectedInstanceModelDescriptor();
+    std::shared_ptr<Model> getSelectedInstanceModel();
+    void setSelectedInstanceModel(int id);
+    void addInstanceModel(std::shared_ptr<Model> model, ModelDescriptor desc);
+
    Camera m_camera;
    CameraLoader m_cam_loader;
 
@@ -48,9 +78,6 @@ private:
 
     SceneModel m_model;
     Model m_cube;
-    std::shared_ptr<Model> m_submodel;
-    int m_submodel_id;
-    int m_num_submodules;
 
     float m_movement_speed;
     bool m_b_hold_object;
@@ -63,6 +90,12 @@ private:
     glm::mat4 m_projection_mat;
     glm::mat4 m_view_mat;
     glm::mat4 m_model_mat;
+
+    int m_selected_library_model;
+    int m_selected_instantiated_model;
+    std::vector<ModelDescriptor> m_model_library;
+    std::vector<std::shared_ptr<Model>> m_instantiated_models;
+    std::vector<ModelDescriptor> m_instantiated_model_descriptors;
 };
 
 #endif // SCENE_H

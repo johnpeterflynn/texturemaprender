@@ -12,6 +12,22 @@ SceneModel::SceneModel(string const &model_path, string const &aggregation_path,
 {
     //"resources/scan0/scene0000_00_vh_clean.aggregation.json"
     //"resources/scan0/scene0000_00_vh_clean_smartuv_75_0_0_no_aspect.segs.json"
+
+}
+
+std::vector<std::string> SceneModel::loadSegmentLabels() {
+    std::ifstream agg_s(m_aggregation_path);
+    json jagg = json::parse(agg_s);
+    auto seg_groups = jagg["segGroups"];
+
+    // TODO: NOTE: We are implicitly assuming that each list entry's indes is also its id
+    std::vector<std::string> labels;
+    for (int i = 0; i < seg_groups.size(); i++) {
+        auto label = seg_groups[i]["label"];
+        labels.push_back(label);
+    }
+
+    return labels;
 }
 
 std::shared_ptr<Model> SceneModel::extractLabeledSubmodel(int id) {
