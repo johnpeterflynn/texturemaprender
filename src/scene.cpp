@@ -255,6 +255,18 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
             }
         }
         break;
+    case Key::NINE:
+        if (!is_already_pressed) {
+            setSelectedInstanceModel(std::max(0, m_selected_instantiated_model - 1));
+            std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+        }
+        break;
+    case Key::ZERO:
+        if (!is_already_pressed) {
+            setSelectedInstanceModel(std::min(m_selected_instantiated_model + 1, int(m_instantiated_models.size()) - 1));
+            std::cout << "Model " << m_selected_instantiated_model << ": " << getSelectedInstanceModelDescriptor().name() << "\n";
+        }
+        break;
     }
 }
 

@@ -138,6 +138,14 @@ void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
         NotifyAllKeys(KeyListener::Key::EQUAL, deltaTime);
     else
         NotifyKeyLifted(KeyListener::Key::EQUAL, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::NINE, deltaTime);
+    else
+        NotifyKeyLifted(KeyListener::Key::NINE, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::ZERO, deltaTime);
+    else
+        NotifyKeyLifted(KeyListener::Key::ZERO, deltaTime);
 
 }
 
