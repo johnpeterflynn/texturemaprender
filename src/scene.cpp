@@ -106,40 +106,39 @@ bool Scene::isFinished() {
 }
 
 void Scene::Draw(Shader& shader) {
-    glm::mat4 model = glm::mat4(1.0);
+    glm::mat4 model_mat = glm::mat4(1.0);
 
     // TODO: Iterate over and draw each object (iterate from renderer?)
-    model = glm::translate(m_model.m_position);
-    shader.setMat4("model", model);
+    model_mat = glm::translate(m_model.m_position);
+    shader.setMat4("model", model_mat);
     m_model.Draw(shader);
 
-    std::shared_ptr<Model> selected_model = nullptr;
-    if (m_instantiated_models.size() > 0) {
-        selected_model = getSelectedInstanceModel();
-    }
+    for (int i = 0; i < m_instantiated_models.size(); i++) {
+        auto instance_model = m_instantiated_models[i];
 
-    if (selected_model && m_b_hold_object) {
-        selected_model->m_position = m_camera.m_position
-                + m_hold_object_dist * m_camera.Front;
-    }
+        if (i == m_selected_instantiated_model) {
+            if (m_b_hold_object) {
+                instance_model->m_position = m_camera.m_position
+                        + m_hold_object_dist * m_camera.Front;
+            }
+        }
 
-    if (selected_model) {
-        std::cout << "Drawing table\n";
         // TODO: Use a 4x4 matrix in object
         // TODO: Find the source of this weird issue where I need to rotate
         //  everything by 90 degrees
         // TODO: About what axis to define pitch and yaw, and in which order to
         //  apply rotations?
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+        model_mat = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
                             glm::vec3(1.0f, 0.0f, 0.0f))
                 *
-                glm::translate(selected_model->m_position)
-                * glm::rotate(selected_model->m_pitch, glm::vec3(0.0f, 0.0f, 1.0f))
-                * glm::rotate(selected_model->m_yaw, glm::vec3(0.0f, 1.0f, 0.0f))
+                glm::translate(instance_model->m_position)
+                * glm::rotate(instance_model->m_pitch, glm::vec3(0.0f, 0.0f, 1.0f))
+                * glm::rotate(instance_model->m_yaw, glm::vec3(0.0f, 1.0f, 0.0f))
                 * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
                               glm::vec3(1.0f, 0.0f, 0.0f));
-        shader.setMat4("model", model);
-        selected_model->Draw(shader);
+
+        shader.setMat4("model", model_mat);
+        instance_model->Draw(shader);
     }
 }
 
