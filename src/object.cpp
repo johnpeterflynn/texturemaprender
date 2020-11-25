@@ -9,6 +9,7 @@ Object::Object(glm::vec3 position, float yaw, float pitch)
     : m_position(position)
     , m_yaw(yaw)
     , m_pitch(pitch)
+    , m_scale(1.0f)
 {
 
 }

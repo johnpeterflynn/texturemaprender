@@ -146,6 +146,14 @@ void KeyHandler::ProcessKeystroke(GLFWwindow *window, float deltaTime)
         NotifyAllKeys(KeyListener::Key::ZERO, deltaTime);
     else
         NotifyKeyLifted(KeyListener::Key::ZERO, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::COMMA, deltaTime);
+    else
+        NotifyKeyLifted(KeyListener::Key::COMMA, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS)
+        NotifyAllKeys(KeyListener::Key::PERIOD, deltaTime);
+    else
+        NotifyKeyLifted(KeyListener::Key::PERIOD, deltaTime);
 
 }
 

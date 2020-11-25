@@ -14,6 +14,8 @@ public:
     // Orientation
     float m_yaw;
     float m_pitch;
+
+    float m_scale;
 };
 
 #endif // OBJECT_H

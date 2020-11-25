@@ -135,6 +135,7 @@ void Scene::Draw(Shader& shader) {
                             glm::vec3(1.0f, 0.0f, 0.0f))
                 *
                 glm::translate(instance_model->m_position)
+                * glm::scale(glm::vec3(1.0f, 1.0f, 1.0f) * instance_model->m_scale)
                 * glm::rotate(instance_model->m_pitch, glm::vec3(0.0f, 0.0f, 1.0f))
                 * glm::rotate(instance_model->m_yaw, glm::vec3(0.0f, 1.0f, 0.0f))
                 * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
@@ -208,6 +209,14 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
     case Key::G:
         if (selected_model)
             selected_model->m_yaw -= velocity;
+        break;
+    case Key::COMMA:
+        if (selected_model)
+            selected_model->m_scale -= velocity;
+        break;
+    case Key::PERIOD:
+        if (selected_model)
+            selected_model->m_scale += velocity;
         break;
     case Key::R:
         if (!is_already_pressed) {
