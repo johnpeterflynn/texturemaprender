@@ -38,6 +38,7 @@ public:
         std::string segs_path;
         std::string cam_params_dir;
         std::string poses_dir;
+        bool free_mode;
         int scene_mask;
         int projection_height;
         int projection_width;
@@ -51,7 +52,7 @@ public:
     /*virtual*/ glm::mat4 GetModelMatrix();
     int GetCurrentPoseId();
 
-    void Update(bool free_mode);
+    void Update();
     virtual void Draw(Shader& shader);
 
     bool isFinished();
@@ -68,16 +69,18 @@ public:
 
 private:
 
-    void NotifyKeys(Key key, float deltaTime);
+    void NotifyKeys(Key key, float deltaTime, bool is_already_pressed);
     void NotifyMouse(double xoffset, double yoffset);
     void NotifyScroll(double yoffset);
 
-    void updateViewMatrix(bool free_mode) ;
+    void updateViewMatrix();
 
-    Params m_params;
+    const Params m_default_params;
 
     SceneModel m_model;
     Model m_cube;
+
+    bool m_free_mode; // True if user can control the camera
 
     float m_movement_speed;
     bool m_b_hold_object;

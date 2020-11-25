@@ -8,7 +8,7 @@ public:
         Y, Z, SPACE, LEFT_SHIFT, MINUS, EQUAL
     };
 
-    virtual void NotifyKeys(Key key, float deltaTime) = 0;
+    virtual void NotifyKeys(Key key, float deltaTime, bool is_already_pressed) = 0;
     virtual void NotifyMouse(double xoffset, double yoffset) {}
     virtual void NotifyScroll(double yoffset) {}
 };

@@ -235,30 +235,42 @@ void Renderer::StopRecordVideo() {
     std::cout << "Finishing video recording\n"; 
 }
 
-void Renderer::NotifyKeys(Key key, float deltaTime) {
+void Renderer::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
     switch(key) {
      case Key::P:
-        m_b_snapshot = true;
+        if (!is_already_pressed) {
+            m_b_snapshot = true;
+        }
         break;
      case Key::V:
-        if (!m_b_recording_video) {
-	    StartRecordVideo();
-        }
-        else {
-	    StopRecordVideo();
+        if (!is_already_pressed) {
+            if (!m_b_recording_video) {
+                StartRecordVideo();
+            }
+            else {
+                StopRecordVideo();
+            }
         }
         break;
      case Key::C:
-        m_render_mode = Mode::VERT_COLOR;
+        if (!is_already_pressed) {
+            m_render_mode = Mode::VERT_COLOR;
+        }
         break;
      case Key::X:
-        m_render_mode = Mode::UV;
+        if (!is_already_pressed) {
+            m_render_mode = Mode::UV;
+        }
         break;
      case Key::F:
-        m_render_mode = Mode::TEXTURE;
+        if (!is_already_pressed) {
+            m_render_mode = Mode::TEXTURE;
+        }
         break;
      case Key::Z:
-        m_render_mode = Mode::DNR;
+        if (!is_already_pressed) {
+            m_render_mode = Mode::DNR;
+        }
         break;
     }
 }

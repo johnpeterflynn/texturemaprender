@@ -42,8 +42,6 @@ glm::mat4 current_pose = glm::mat4(1.0f);
 
 int num_snapshots = 0;
 
-bool free_mode = true;
-
 KeyHandler *key_handler;
 
 int main(int argc, char *argv[])
@@ -59,7 +57,7 @@ int main(int argc, char *argv[])
         ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
-        ("free-mode", po::value<bool>()->default_value(free_mode), "allow free moving camera")
+        ("free-mode", po::value<bool>()->default_value(false), "allow free moving camera")
         //("pose-start", po::value<int>()->default_value(0), "start pose index")
         ("record-video", po::value<bool>()->default_value(false), "record video on startup")
         ("height", po::value<int>()->default_value(SCR_DEFAULT_HEIGHT), "Window render height")
@@ -81,7 +79,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    free_mode = vm["free-mode"].as<bool>();
     //num_processed_poses = vm["pose-start"].as<int>();
 
     Scene::Params scene_params;
@@ -92,6 +89,7 @@ int main(int argc, char *argv[])
     scene_params.poses_dir = vm["poses"].as<std::string>();
     scene_params.scene_mask = vm["scene-mask"].as<int>();
     scene_params.pose_interp_factor = vm["interp-factor"].as<float>();
+    scene_params.free_mode = vm["free-mode"].as<bool>();
 
     Renderer::Mode render_mode;
     switch(vm["render-mode"].as<char>()) {
@@ -216,7 +214,7 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
 
         // scene
         // ------
-        scene.Update(free_mode);
+        scene.Update();
 
         // render
         // ------
@@ -248,11 +246,6 @@ void processInput(GLFWwindow *window)
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         //frameWriter.WriteAsJpg(num_snapshots++, SCR_HEIGHT, SCR_WIDTH);
-    }
-
-    // TODO: Move this elsehwere (into scene.cpp?)
-    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
-        free_mode = !free_mode;
     }
 }
 

@@ -27,7 +27,7 @@ public:
 private:
     void StartRecordVideo();
     void StopRecordVideo();
-    void NotifyKeys(Key key, float deltaTime);
+    void NotifyKeys(Key key, float deltaTime, bool is_already_pressed);
 
     const int m_height, m_width;
 

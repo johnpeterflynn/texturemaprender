@@ -20,15 +20,16 @@ ModelDescriptor::ModelDescriptor(std::string name, int id)
 }
 
 Scene::Scene(const Scene::Params &params)
-    : m_params(params)
+    : m_default_params(params)
     , m_camera(glm::vec3(0.0f, 0.0f, 0.0f))
     , m_cam_loader(params.cam_params_dir, params.poses_dir)
     , m_model(params.model_path, params.aggregation_path, params.segs_path, params.scene_mask)
+    , m_free_mode(m_default_params.free_mode)
     , m_movement_speed(2.5f)
     , m_b_hold_object(false)
     , m_first_update(true)
     , m_current_pose_id(-1)
-    , m_pose_id_increment(1.0 / m_params.pose_interp_factor)
+    , m_pose_id_increment(1.0 / m_default_params.pose_interp_factor)
     , m_projection_mat(1.0f)
     , m_view_mat(1.0f)
     , m_model_mat(1.0f)
@@ -45,7 +46,7 @@ Scene::Scene(const Scene::Params &params)
 
 
 glm::mat4 Scene::GetProjectionMatrix(const float near, const float far) {
-    return m_camera.GetProjectionMatrix(m_params.projection_height, m_params.projection_width, near, far);
+    return m_camera.GetProjectionMatrix(m_default_params.projection_height, m_default_params.projection_width, near, far);
 }
 
 glm::mat4 Scene::GetViewMatrix() {
@@ -57,9 +58,9 @@ glm::mat4 Scene::GetModelMatrix() {
 }
 */
 
-void Scene::Update(bool free_mode) {
+void Scene::Update() {
     // change state of whatever keeps track of the pose
-    if (!free_mode) {
+    if (!m_free_mode) {
         if (m_first_update) {
             m_current_pose_id = 0.0;
             m_first_update = false;
@@ -70,19 +71,19 @@ void Scene::Update(bool free_mode) {
         }
     }
 
-    updateViewMatrix(free_mode);
+    updateViewMatrix();
 }
 
 int Scene::GetCurrentPoseId() {
     // TODO: Find a way to better reflect the indices of the real poses. This blurs their definition
     // when pose_interp_factor != 1.0
-    return m_current_pose_id * m_params.pose_interp_factor;
+    return m_current_pose_id * m_default_params.pose_interp_factor;
 }
 
-void Scene::updateViewMatrix(bool free_mode) {
+void Scene::updateViewMatrix() {
     // TODO: Resolve need to rotate the view by -90 and -180 degrees in these
     //  two modes.
-    if (free_mode) {
+    if (m_free_mode) {
         // TODO: Make m_camera private
         m_view_mat = m_camera.GetViewMatrix()
                 * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),
@@ -142,7 +143,7 @@ void Scene::Draw(Shader& shader) {
     }
 }
 
-void Scene::NotifyKeys(Key key, float deltaTime) {
+void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
     float velocity = m_movement_speed * deltaTime;
 
     std::shared_ptr<Model> selected_model = nullptr;
@@ -152,6 +153,10 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
 
     // TODO: Optionally debounce the keys
     switch(key) {
+     case Key::B:
+        if (!is_already_pressed) {
+            m_free_mode = !m_free_mode;
+        }
      case Key::W:
         m_camera.ProcessKeyboard(FORWARD, deltaTime);
         break;
@@ -203,43 +208,51 @@ void Scene::NotifyKeys(Key key, float deltaTime) {
             selected_model->m_yaw -= velocity;
         break;
     case Key::R:
-        if (selected_model) {
-            // Reset angles
-            selected_model->m_pitch = 0;
-            selected_model->m_yaw = 0;
+        if (!is_already_pressed) {
+            if (selected_model) {
+                // Reset angles
+                selected_model->m_pitch = 0;
+                selected_model->m_yaw = 0;
+            }
         }
         break;
     case Key::MINUS:
-        setSelectedLibraryModel(std::max(0, m_selected_library_model - 1));
-        std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
+        if (!is_already_pressed) {
+            setSelectedLibraryModel(std::max(0, m_selected_library_model - 1));
+            std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
+        }
         break;
     case Key::EQUAL:
-        setSelectedLibraryModel(std::min(m_selected_library_model + 1, int(m_model_library.size()) - 1));
-        std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
+        if (!is_already_pressed) {
+            setSelectedLibraryModel(std::min(m_selected_library_model + 1, int(m_model_library.size()) - 1));
+            std::cout << "Model " << m_selected_library_model << ": " << getSelectedLibraryModelDescriptor().name() << "\n";
+        }
         break;
     case Key::O:
-        if (selected_model && !m_b_hold_object) {
-            std::cout << "Grabbing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
-            m_hold_object_dist = glm::distance(m_camera.m_position, selected_model->m_position);
-            m_b_hold_object = true;
-        }
-        else {
-            std::cout << "Releasing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
-            m_b_hold_object = false;
+        if (!is_already_pressed) {
+            if (selected_model && !m_b_hold_object) {
+                std::cout << "Grabbing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
+                m_hold_object_dist = glm::distance(m_camera.m_position, selected_model->m_position);
+                m_b_hold_object = true;
+            }
+            else {
+                std::cout << "Releasing object " << getSelectedInstanceModelDescriptor().name() << " " << m_selected_instantiated_model << "\n";
+                m_b_hold_object = false;
+            }
         }
         break;
     case Key::M:
-        //m_submodel = m_model.extractLabeledSubmodel(m_submodel_id);
-
-        // Get descriptor for currently selected model
-        ModelDescriptor desc = getSelectedLibraryModelDescriptor();
-        if (!desc.m_b_loadable) {
-            // Create that model
-            std::shared_ptr<Model> new_model = m_model.extractLabeledSubmodel(m_selected_library_model);
-            // Add new model
-            addInstanceModel(new_model, desc);
-            // Set focus to that instantiated model
-            setSelectedInstanceModel(m_instantiated_models.size() - 1);
+        if (!is_already_pressed) {
+            // Get descriptor for currently selected model
+            ModelDescriptor desc = getSelectedLibraryModelDescriptor();
+            if (!desc.m_b_loadable) {
+                // Create that model
+                std::shared_ptr<Model> new_model = m_model.extractLabeledSubmodel(m_selected_library_model);
+                // Add new model
+                addInstanceModel(new_model, desc);
+                // Set focus to that instantiated model
+                setSelectedInstanceModel(m_instantiated_models.size() - 1);
+            }
         }
         break;
     }
