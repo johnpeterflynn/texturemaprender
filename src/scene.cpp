@@ -5,17 +5,19 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-ModelDescriptor::ModelDescriptor(std::string name, std::string path)
+ModelDescriptor::ModelDescriptor(std::string name, std::string path, int mask)
     : m_name(name)
     , m_path(path)
     , m_b_loadable(true)
+    , m_mask(mask)
 {
 }
 
-ModelDescriptor::ModelDescriptor(std::string name, int id)
+ModelDescriptor::ModelDescriptor(std::string name, int id, int mask)
     : m_name(name)
     , m_id(id)
     , m_b_loadable(false)
+    , m_mask(mask)
 {
 }
 
@@ -41,7 +43,7 @@ Scene::Scene(const Scene::Params &params)
 
     auto model_semantic_labels = m_model.loadSegmentLabels();
     for (int i = 0; i < model_semantic_labels.size(); i++) {
-        ModelDescriptor descriptor(model_semantic_labels[i], i);
+        ModelDescriptor descriptor(model_semantic_labels[i], i, m_model.m_mask);
         m_model_library.push_back(descriptor);
     }
 }

@@ -9,13 +9,14 @@
 
 class ModelDescriptor {
 public:
-    ModelDescriptor(std::string name, std::string path);
-    ModelDescriptor(std::string name, int id);
+    ModelDescriptor(std::string name, std::string path, int mask);
+    ModelDescriptor(std::string name, int id, int mask);
 
     std::string m_name;
     std::string m_path;
     int m_id;
     bool m_b_loadable;
+    int m_mask;
 
     std::string name() {
         return m_name;
@@ -27,6 +28,10 @@ public:
 
     int id() {
         return m_id;
+    }
+
+    int mask() {
+        return m_mask;
     }
 };
 
