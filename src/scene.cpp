@@ -265,14 +265,18 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
         if (!is_already_pressed) {
             // Get descriptor for currently selected model
             ModelDescriptor desc = getSelectedLibraryModelDescriptor();
+            std::shared_ptr<Model> new_model;
             if (!desc.m_b_loadable) {
                 // Create that model
-                std::shared_ptr<Model> new_model = m_model.extractLabeledSubmodel(m_selected_library_model);
-                // Add new model
-                addInstanceModel(new_model, desc);
-                // Set focus to that instantiated model
-                setSelectedInstanceModel(m_instantiated_models.size() - 1);
+                new_model = m_model.extractLabeledSubmodel(m_selected_library_model);
             }
+            else {
+                new_model = std::make_shared<Model>(desc.path(), false, desc.mask());
+            }
+            // Add new model
+            addInstanceModel(new_model, desc);
+            // Set focus to that instantiated model
+            setSelectedInstanceModel(m_instantiated_models.size() - 1);
         }
         break;
     case Key::N:
