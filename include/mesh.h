@@ -94,7 +94,7 @@ public:
         glActiveTexture(GL_TEXTURE0);
     }
 
-private:
+//private:
     // render data
     unsigned int VBO, EBO;
 
@@ -142,5 +142,7 @@ private:
 
         glBindVertexArray(0);
     }
+
+
 };
 #endif

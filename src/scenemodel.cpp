@@ -30,6 +30,58 @@ std::vector<std::string> SceneModel::loadSegmentLabels() {
     return labels;
 }
 
+void SceneModel::deleteLabeledSubmodel(int id) {
+    std::ifstream agg_s(m_aggregation_path);
+    json jagg = json::parse(agg_s);
+    // 35 - table near chair. move to (-0.6, -1, 0)
+    // 12 - trash can by fridge. move to (0.13, -0.4, 0)
+    std::vector<int> segs = jagg["segGroups"][id]["segments"];
+    std::ifstream seg_s(m_segs_path);
+    json jseg = json::parse(seg_s);
+    std::vector<int> seg_indices = jseg["segIndices"];
+
+    int vertices_per_face = 3;
+
+    // Get segmentation vertex indices with respect to the scene mesh.
+    std::vector<int> seg_vert_indices;
+    std::unordered_set<int> seg_vert_indices_hash;
+    for (size_t i = 0; i < seg_indices.size(); i++) {
+        if (std::find(segs.begin(), segs.end(), seg_indices[i]) != segs.end()) {
+            seg_vert_indices.push_back(i);
+            seg_vert_indices_hash.insert(i);
+        }
+    }
+
+    auto &mesh = meshes[0];
+
+    // Compute segmentation vertex indices for each submesh face with respect to
+    //  the submesh.
+    for(unsigned int i = 0; i < mesh.indices.size(); i+=vertices_per_face)
+    {
+        // save vertex indices for all faces made up of only segmentation
+        //  vertices
+        bool b_keep_seg_verts = false;
+
+        // Flag faces with all vertices in seg_vert_indices
+        for(unsigned int j = 0; j < vertices_per_face; j++) {
+            int mesh_face_vert_index = mesh.indices[i + j];
+            if(seg_vert_indices_hash.find(mesh_face_vert_index) == seg_vert_indices_hash.end()) {
+                b_keep_seg_verts = true;
+            }
+        }
+        if (!b_keep_seg_verts) {
+            for(unsigned int j = 0; j < vertices_per_face; j++) {
+                mesh.indices[i + j] = 0;
+            }
+        }
+    }
+
+    std::cout << "Erased: " << id << "\n";
+
+    mesh.setupMesh();
+}
+
+
 std::shared_ptr<Model> SceneModel::extractLabeledSubmodel(int id) {
     std::ifstream agg_s(m_aggregation_path);
     json jagg = json::parse(agg_s);

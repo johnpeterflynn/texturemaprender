@@ -220,6 +220,11 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
         if (selected_model)
             selected_model->m_scale += velocity;
         break;
+    case Key::Q:
+        if (!is_already_pressed) {
+            m_model.deleteLabeledSubmodel(m_selected_library_model);
+        }
+        break;
     case Key::R:
         if (!is_already_pressed) {
             if (selected_model) {

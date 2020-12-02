@@ -10,6 +10,7 @@ public:
 
     std::vector<std::string> loadSegmentLabels();
     std::shared_ptr<Model> extractLabeledSubmodel(int id);
+    void deleteLabeledSubmodel(int id);
 
 private:
     std::string m_aggregation_path;
