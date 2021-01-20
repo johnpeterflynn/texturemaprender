@@ -46,8 +46,19 @@ KeyHandler *key_handler;
 
 int main(int argc, char *argv[])
 {
-    // Declare required options.
-    po::options_description required("Required options");
+    // Declare generic options
+    po::options_description generic("Generic options");
+    generic.add_options()
+        ("help", "produce help message")
+    ;
+
+    // Declare confile file path option
+    po::options_description disk_config("Config loaded from disk");
+    disk_config.add_options()
+	("config", po::value<std::string>()->default_value("config.ini"), "path to config file");
+    
+    // Declare required options
+    po::options_description required("Required");
     required.add_options()
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
         ("agg-path", po::value<std::string>(), "path to aggregation file containing seg groups for each model vertex")
@@ -56,6 +67,11 @@ int main(int argc, char *argv[])
         ("net", po::value<std::string>(), "path to deferred neural renderer network model weights")
         ("cam-params", po::value<std::string>(), "path to directory containing intrinsic and extrinsic camera parameters")
         ("output-path", po::value<std::string>(), "path to output rendered frames")
+    ;
+
+    // Declare optional options
+    po::options_description optional("Optional");
+    optional.add_options()
         ("write-coords", po::value<bool>()->default_value(false), "flag to write rendered texture coords to file")
         ("free-mode", po::value<bool>()->default_value(false), "allow free moving camera")
         //("pose-start", po::value<int>()->default_value(0), "start pose index")
@@ -67,9 +83,29 @@ int main(int argc, char *argv[])
         ("render-mode", po::value<char>()->default_value('u'), "Render mode at start-up. Possibilities are u (uv coords), v (vertex color), t (texture) and d (DNR)")
     ;
 
+    po::options_description program_config("Program configuration options");
+    program_config.add(required).add(optional);
+    po::options_description all_config("All config");
+    all_config.add(generic).add(disk_config).add(program_config);
+
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, required), vm);
+    
+    // Parse command line (values stored earlier take precedent)
+    po::store(po::parse_command_line(argc, argv, all_config), vm);
+    
+    // Load and parse values from config file if one exsists
+    if (vm.count("config")) {
+    	ifstream config_file(vm["config"].as<std::string>());
+    	po::store(po::parse_config_file(config_file, program_config), vm);
+    }
+
     po::notify(vm);
+
+    // Display help and exit
+    if (vm.count("help")) {
+        std::cout << all_config << "\n";
+        return 1;
+    }
 
     if (!vm.count("model")
             || !vm.count("poses")
