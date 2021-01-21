@@ -145,7 +145,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
     //snap_filename = dnr::time::getTimeAsString();
     // TODO: Replace m_num_snaps with scene::GetCurrentPoseId(). At the moment, can't be sure GetCurrentPoseId() won't
     // suffer from rounding errors due to interpolation
-    snap_filename = std::to_string(m_num_snaps);
+    snap_filename = dnr::format::intToString(m_num_snaps, 7);
     if (m_b_snapshot || (writeToFile && (m_render_mode == Mode::UV))) {
         // Take snapshot of uv coords
         m_frameWriter.WriteAsTexcoord(std::string("snapshots/uv/") + snap_filename);

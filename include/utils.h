@@ -19,7 +19,19 @@ static std::string getTimeAsString(std::string prepend_str = "") {
 
     return ss.str();
 }
+}
 
+namespace format
+{
+static std::string intToString(int n, int length) {
+   std::stringstream ss;
+
+   // Pad remaining length with zeros
+   ss << std::setw(length) << std::setfill('0') << n;
+   std::string s = ss.str();
+
+   return s;
+}
 }
 }
 
