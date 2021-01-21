@@ -181,20 +181,16 @@ void Scene::NotifyKeys(Key key, float deltaTime, bool is_already_pressed) {
         m_camera.ProcessKeyboard(DOWN, deltaTime);
         break;
      case Key::I:
-        if (selected_model)
-            selected_model->m_position.x += velocity;
+        m_camera.ProcessKeyboard(TURN_UP, deltaTime);
         break;
      case Key::J:
-        if (selected_model)
-            selected_model->m_position.y += velocity;
+        m_camera.ProcessKeyboard(TURN_LEFT, deltaTime);
         break;
      case Key::K:
-        if (selected_model)
-            selected_model->m_position.x -= velocity;
+        m_camera.ProcessKeyboard(TURN_DOWN, deltaTime);
         break;
      case Key::L:
-        if (selected_model)
-            selected_model->m_position.y -= velocity;
+        m_camera.ProcessKeyboard(TURN_RIGHT, deltaTime);
         break;
     case Key::Y:
         if (selected_model)

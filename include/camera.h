@@ -16,7 +16,11 @@ enum Camera_Movement {
     LEFT,
     RIGHT,
     UP,
-    DOWN
+    DOWN,
+    TURN_LEFT,
+    TURN_RIGHT,
+    TURN_UP,
+    TURN_DOWN
 };
 
 // Default camera values
@@ -123,6 +127,18 @@ public:
             m_position += WorldUp * velocity;
         if (direction == DOWN)
             m_position -= WorldUp * velocity;
+        if (direction == TURN_LEFT) {
+            ProcessMovement(-velocity*10, 0);
+        }
+        if (direction == TURN_RIGHT) {
+            ProcessMovement(velocity*10, 0);
+        }
+        if (direction == TURN_UP) {
+            ProcessMovement(0, velocity*10);
+        }
+        if (direction == TURN_DOWN) {
+            ProcessMovement(0, -velocity*10);
+        }
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -131,6 +147,11 @@ public:
         xoffset *= MouseSensitivity;
         yoffset *= MouseSensitivity;
 
+        ProcessMovement(xoffset, yoffset);
+     }
+
+    void ProcessMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
+    {
         m_yaw   += xoffset;
         m_pitch += yoffset;
 
