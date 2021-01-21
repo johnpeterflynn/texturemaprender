@@ -27,8 +27,11 @@ void processInput(GLFWwindow *window);
 
 // settings
 float c = 1;
-const unsigned int SCR_DEFAULT_WIDTH = 1296;//686;//int(1296 * c);//686;
-const unsigned int SCR_DEFAULT_HEIGHT = 968;//512;//nt(968 * c);//512;
+const unsigned int SCR_DEFAULT_WIDTH = 1024;
+const unsigned int SCR_DEFAULT_HEIGHT = 768;
+
+int glfw_window_height = SCR_DEFAULT_HEIGHT;
+int glfw_window_width = SCR_DEFAULT_WIDTH;
 
 // timing
 float deltaTime = 0.0f;
@@ -186,8 +189,8 @@ int run(const Scene::Params &scene_params, int window_height, int window_width, 
     // --------------------
     // TODO: Make sure this works on non-apple screens
     // see https://stackoverflow.com/questions/36672935/why-retina-screen-coordinate-value-is-twice-the-value-of-pixel-value
-    int glfw_window_height = window_height;
-    int glfw_window_width = window_width;
+    glfw_window_height = window_height;
+    glfw_window_width = window_width;
     // Handle retina displays mucking with window resolution
 #ifdef __APPLE__
     glfw_window_height /= 2;
