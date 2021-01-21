@@ -13,7 +13,7 @@ Renderer::Renderer(int height, int width, const std::string &net_path,
     , m_color_shader("src/shaders/vertexshader_vertcolor.vs", "src/shaders/fragmentshader_vertcolor.fs")
     , m_scene_texture_shader("src/shaders/vertexshader_scenetexture.vs", "src/shaders/fragmentshader_scenetexture.fs")
     , m_screen_texture_shader("src/shaders/vertexshader_screentexture.vs", "src/shaders/fragmentshader_screentexture.fs")
-    , m_frameWriter(output_path)
+    , m_frameWriter(height, width, output_path)
     , m_dnr(m_height, m_width, net_path)
     , m_b_snapshot(false)
     , m_num_snaps(0)
@@ -148,7 +148,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
     snap_filename = std::to_string(m_num_snaps);
     if (m_b_snapshot || (writeToFile && (m_render_mode == Mode::UV))) {
         // Take snapshot of uv coords
-        m_frameWriter.WriteAsTexcoord(m_height, m_width, std::string("snapshots/uv/") + snap_filename);
+        m_frameWriter.WriteAsTexcoord(std::string("snapshots/uv/") + snap_filename);
     }
 
     if (m_render_mode == Mode::DNR) {
@@ -200,7 +200,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
         // TODO: Use a consistent method for concatenating file paths
 
         // Take a picture snapshot
-        m_frameWriter.WriteAsJpg(m_height, m_width, std::string("snapshots/color/") + snap_filename);
+        m_frameWriter.WriteAsJpg(std::string("snapshots/color/") + snap_filename);
     }
 
     if(m_b_snapshot || writeToFile) {
@@ -219,12 +219,12 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
     }
 
     if (m_b_recording_video && m_frameWriter.WriteVideoReady()) {
-        m_frameWriter.WriteFrameAsVideo(m_height, m_width);
+        m_frameWriter.WriteFrameAsVideo();
     }
 }
 
 void Renderer::StartRecordVideo() {
-    m_b_recording_video = m_frameWriter.SetupWriteVideo(m_height, m_width);
+    m_b_recording_video = m_frameWriter.SetupWriteVideo();
     std::cout << "Starting video recording\n";
 }
 

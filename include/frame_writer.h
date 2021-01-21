@@ -15,24 +15,24 @@ namespace fs = boost::filesystem;
 
 class FrameWriter {
 public:
-    FrameWriter();
-    FrameWriter(const std::string& output_path);
+    FrameWriter(int height, int width);
+    FrameWriter(int height, int width, const std::string& output_path);
 
     void setPath(const std::string& output_path);
 
-    void RenderAsTexcoord(DNRenderer& dnr, int rows, int cols, bool writeout);
+    void RenderAsTexcoord(DNRenderer& dnr, bool writeout);
 
-    void WriteAsTexcoord(const int height, const int width, const int id);
-    void WriteAsTexcoord(const int height, const int width, const std::string& filename = "");
-    void WriteAsJpg(const int height, const int width, const std::string& filename = "");
+    void WriteAsTexcoord(const int id);
+    void WriteAsTexcoord(const std::string& filename = "");
+    void WriteAsJpg(const std::string& filename = "");
 
-    bool SetupWriteVideo(int height, int width, float framerate = 15.0f);
+    bool SetupWriteVideo(float framerate = 15.0f);
     void ShutdownWriteVideo();
     bool WriteVideoReady();
-    void WriteFrameAsVideo(int height, int width);
+    void WriteFrameAsVideo();
 
 private:
-    void ReadBufferAsTexcoord(float* data, int width, int height);
+    void ReadBufferAsTexcoord(float* data);
     static void CompressWriteFile(char *buf, int size,
                                     const std::string& filename);
 
@@ -41,6 +41,9 @@ private:
 
     fs::path m_output_path;
     cv::VideoWriter m_video_writer;
+
+    int m_height;
+    int m_width;
 };
 
 #endif // FRAME_WRITER_H

@@ -9,7 +9,10 @@
 #include "stb/stb_image_write.h"
 #include "utils.h"
 
-FrameWriter::FrameWriter() {
+FrameWriter::FrameWriter(int height, int width)
+    : m_height(height)
+    , m_width(width)
+{
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     //stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
 
@@ -17,8 +20,8 @@ FrameWriter::FrameWriter() {
     stbi_flip_vertically_on_write(true);
 }
 
-FrameWriter::FrameWriter(const std::string& output_path)
-    : FrameWriter()
+FrameWriter::FrameWriter(int height, int width, const std::string& output_path)
+    : FrameWriter(height, width)
 {
    setPath(output_path);
 }
@@ -27,50 +30,51 @@ void FrameWriter::setPath(const std::string& output_path) {
    m_output_path = output_path;
 }
 
-void FrameWriter::ReadBufferAsTexcoord(float* data, int width, int height) {
+void FrameWriter::ReadBufferAsTexcoord(float* data) {
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, data);
+    glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_FLOAT, data);
 
     // OpenGL requires floats between 0 and 1 so convert float back to an integer
     // index
-    for (int i = NUM_UV_CHANNELS - 1; i < height * width * NUM_UV_CHANNELS; i += NUM_UV_CHANNELS) {
+    for (int i = NUM_UV_CHANNELS - 1; i < m_height * m_width * NUM_UV_CHANNELS; i += NUM_UV_CHANNELS) {
         data[i] = data[i] * 255.0;
     }
 }
 
-void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, int height, int width, bool writeout) {
+void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, bool writeout) {
     // TODO: Allocate and deallocate heap_data only once
-    float *heap_data = new float[height * width * NUM_UV_CHANNELS];
+    float *heap_data = new float[m_height * m_width * NUM_UV_CHANNELS];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
-    ReadBufferAsTexcoord(heap_data, width, height);
+    ReadBufferAsTexcoord(heap_data);
 
-    dnr.render(heap_data, height, width, writeout);
+    dnr.render(heap_data, m_height, m_width, writeout);
 
     delete [] heap_data;
 }
 
-void FrameWriter::WriteAsTexcoord(const int height, const int width, const int id) {
+void FrameWriter::WriteAsTexcoord(const int id) {
     std::string file_path = (m_output_path / std::to_string(id)).string();
-    WriteAsTexcoord(height, width, file_path);
+    WriteAsTexcoord(file_path);
 }
 
-void FrameWriter::WriteAsTexcoord(const int height, const int width, const std::string& filename)
+void FrameWriter::WriteAsTexcoord(const std::string& filename)
 {
+   auto t1 = std::chrono::high_resolution_clock::now();
    // TODO: Allocate and deallocate heap_data only once
-   float *heap_data = new float[height * width * NUM_UV_CHANNELS];
+   float *heap_data = new float[m_height * m_width * NUM_UV_CHANNELS];
 
    ReadBufferAsTexcoord(heap_data, width, height);
 
-   CompressWriteFile((char*)heap_data,
-                     height * width * NUM_UV_CHANNELS * sizeof(float),
+   CompressWriteFile((char*)int_data,
+                     m_height * m_width * NUM_UV_CHANNELS * sizeof(unsigned short),
                      filename);
 
    delete [] heap_data;
 }
 
-void FrameWriter::WriteAsJpg(const int height, const int width, const std::string& filename) {
-    GLchar data[height * width * NUM_COLOR_CHANNELS]; // # pixels x # floats per pixel
+void FrameWriter::WriteAsJpg(const std::string& filename) {
+    GLchar data[m_height * m_width * NUM_COLOR_CHANNELS]; // # pixels x # floats per pixel
     std::string file_path;
 
     if (filename.empty()) {
@@ -88,18 +92,18 @@ void FrameWriter::WriteAsJpg(const int height, const int width, const std::strin
     // TODO: BUG: Needed to switch this to GL_BACK to read the same image as WriteAsTexcoord().
     // Should they both be reading from the back buffer?
     glReadBuffer(GL_BACK);
-    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     // 90% quality, could be less
-    stbi_write_jpg(file_path.c_str(), width, height, NUM_COLOR_CHANNELS, data, 100);
+    stbi_write_jpg(file_path.c_str(), m_width, m_height, NUM_COLOR_CHANNELS, data, 100);
 }
 
-bool FrameWriter::SetupWriteVideo(int height, int width, float framerate) {
+bool FrameWriter::SetupWriteVideo(float framerate) {
     std::string filename = dnr::time::getTimeAsString("recordings/") + ".avi";
     m_video_writer.open(filename,
                 cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
                 framerate,
-                cv::Size(width, height),
+                cv::Size(m_width, m_height),
                 true);
 
     bool b_opened = m_video_writer.isOpened();
@@ -124,8 +128,8 @@ bool FrameWriter::WriteVideoReady() {
 
 // TODO: Save height and width from setup
 // TODO: Record in a background thread
-void FrameWriter::WriteFrameAsVideo(int height, int width) {
-    cv::Mat pixels(height, width, CV_8UC3 );
+void FrameWriter::WriteFrameAsVideo() {
+    cv::Mat pixels(m_height, m_width, CV_8UC3 );
 
     //use fast 4-byte alignment (default anyway) if possible
     glPixelStorei(GL_PACK_ALIGNMENT, (pixels.step & 3) ? 1 : 4);
@@ -133,14 +137,14 @@ void FrameWriter::WriteFrameAsVideo(int height, int width) {
     //set length of one complete row in destination data (doesn't need to equal img.cols)
     glPixelStorei(GL_PACK_ROW_LENGTH, pixels.step/pixels.elemSize());
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data);
+    glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data);
 
-    cv::Mat cv_pixels(height, width, CV_8UC3 );
-    for( int y=0; y<height; y++ ) for( int x=0; x<width; x++ )
+    cv::Mat cv_pixels(m_height, m_width, CV_8UC3 );
+    for( int y=0; y<m_height; y++ ) for( int x=0; x<m_width; x++ )
     {
-        cv_pixels.at<cv::Vec3b>(y,x)[2] = pixels.at<cv::Vec3b>(height-y-1,x)[0];
-        cv_pixels.at<cv::Vec3b>(y,x)[1] = pixels.at<cv::Vec3b>(height-y-1,x)[1];
-        cv_pixels.at<cv::Vec3b>(y,x)[0] = pixels.at<cv::Vec3b>(height-y-1,x)[2];
+        cv_pixels.at<cv::Vec3b>(y,x)[2] = pixels.at<cv::Vec3b>(m_height-y-1,x)[0];
+        cv_pixels.at<cv::Vec3b>(y,x)[1] = pixels.at<cv::Vec3b>(m_height-y-1,x)[1];
+        cv_pixels.at<cv::Vec3b>(y,x)[0] = pixels.at<cv::Vec3b>(m_height-y-1,x)[2];
     }
 
     // Write next frame
