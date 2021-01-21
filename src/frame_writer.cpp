@@ -1,6 +1,6 @@
 #include "frame_writer.h"
 
-#include <glad/glad.h>
+//#include <glad/glad.h>
 
 #include <fstream>
 #include <iostream>
@@ -13,6 +13,10 @@ FrameWriter::FrameWriter(int height, int width)
     : m_height(height)
     , m_width(width)
 {
+    int len_uv_data = m_height * m_width * NUM_UV_CHANNELS;
+    m_data_raw.reserve(len_uv_data);
+    m_data_significand.reserve(len_uv_data);
+    
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     //stbi_flip_vertically_on_write(false); // TODO: Why is this necessary?
 
@@ -30,27 +34,18 @@ void FrameWriter::setPath(const std::string& output_path) {
    m_output_path = output_path;
 }
 
-void FrameWriter::ReadBufferAsTexcoord(float* data) {
+void FrameWriter::ReadBufferAsTexcoord(std::vector<float> &uv_data) {
     glReadBuffer(GL_FRONT);
-    glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_FLOAT, data);
-
-    // OpenGL requires floats between 0 and 1 so convert float back to an integer
-    // index
-    for (int i = NUM_UV_CHANNELS - 1; i < m_height * m_width * NUM_UV_CHANNELS; i += NUM_UV_CHANNELS) {
-        data[i] = data[i] * 255.0;
-    }
+    glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_FLOAT, uv_data.data());
 }
 
 void FrameWriter::RenderAsTexcoord(DNRenderer& dnr, bool writeout) {
-    // TODO: Allocate and deallocate heap_data only once
-    float *heap_data = new float[m_height * m_width * NUM_UV_CHANNELS];
     //std::string file_path = (m_output_path / std::to_string(id)).string();
 
-    ReadBufferAsTexcoord(heap_data);
+    ReadBufferAsTexcoord(m_data_raw);
 
-    dnr.render(heap_data, m_height, m_width, writeout);
-
-    delete [] heap_data;
+    // TODO: WARNING: dnr is given write access to data() which may be undesierable
+    dnr.render(m_data_raw.data(), m_height, m_width, writeout);
 }
 
 void FrameWriter::WriteAsTexcoord(const int id) {
@@ -58,19 +53,35 @@ void FrameWriter::WriteAsTexcoord(const int id) {
     WriteAsTexcoord(file_path);
 }
 
+void FrameWriter::ConvertRawToSignificand(std::vector<unsigned short> &significand_out,
+		const std::vector<float> &raw_in)
+{
+   // TODO: Do this in parallel
+   for (int i = 0; i < m_height * m_width; i += NUM_UV_CHANNELS) {
+   	for (int j = 0; j < NUM_UV_CHANNELS - 1; j++) {
+      	    significand_out[i + j] = (unsigned short)(raw_in[i + j] * (1 << 16));
+	}
+	int mask_index = i + (NUM_UV_CHANNELS - 1);
+	// TODO: WARNING: Mask conversion might suffer from rounding errors
+      	significand_out[mask_index] = (unsigned short)(raw_in[mask_index] * 255.0);
+   }
+}
+
 void FrameWriter::WriteAsTexcoord(const std::string& filename)
 {
-   auto t1 = std::chrono::high_resolution_clock::now();
-   // TODO: Allocate and deallocate heap_data only once
-   float *heap_data = new float[m_height * m_width * NUM_UV_CHANNELS];
+   ReadBufferAsTexcoord(m_data_raw);
 
-   ReadBufferAsTexcoord(heap_data, width, height);
+   // No reading or writing data vectors until last read finishes  
+   if (m_p_write_thread) {
+	   m_p_write_thread->join();
+   }
+   
+   ConvertRawToSignificand(m_data_significand, m_data_raw);   
 
-   CompressWriteFile((char*)int_data,
+   m_p_write_thread = std::make_shared<std::thread>(CompressWriteFile,
+		   (char*)m_data_significand.data(),
                      m_height * m_width * NUM_UV_CHANNELS * sizeof(unsigned short),
                      filename);
-
-   delete [] heap_data;
 }
 
 void FrameWriter::WriteAsJpg(const std::string& filename) {

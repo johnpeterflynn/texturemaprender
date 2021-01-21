@@ -8,6 +8,7 @@
 //#include <opencv2/videoio.hpp>  // Video write
 #include <opencv4/opencv2/opencv.hpp>
 //#include <opencv/cv.hpp>
+#include <thread>
 
 #include "deferred_neural_renderer.h"
 
@@ -32,7 +33,9 @@ public:
     void WriteFrameAsVideo();
 
 private:
-    void ReadBufferAsTexcoord(float* data);
+    void ReadBufferAsTexcoord(std::vector<float> &data);
+    void ConvertRawToSignificand(std::vector<unsigned short> &significand_out,
+		const std::vector<float> &raw_in);
     static void CompressWriteFile(char *buf, int size,
                                     const std::string& filename);
 
@@ -44,6 +47,10 @@ private:
 
     int m_height;
     int m_width;
+
+    std::vector<float> m_data_raw;
+    std::vector<unsigned short> m_data_significand;
+    std::shared_ptr<std::thread> m_p_write_thread;
 };
 
 #endif // FRAME_WRITER_H
