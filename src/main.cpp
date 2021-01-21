@@ -309,9 +309,9 @@ void processInput(GLFWwindow *window)
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
-    glViewport(0, 0, width, height);
+    // NOTE: glfw sometimes limits the size of the window. Not sure why but this
+    //  should be investigated. For now, override the provided dimensions.
+    glViewport(0, 0, glfw_window_width, glfw_window_height);
 }
 
 // glfw: whenever the mouse moves, this callback is called
