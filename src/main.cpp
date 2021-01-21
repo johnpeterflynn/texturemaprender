@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
     // Declare required options
     po::options_description required("Required");
     required.add_options()
+        ("scene-params", po::value<std::string>(), "parameter file of SanNet scene (.txt)")
         ("model", po::value<std::string>(), "path to scan file (.off, .ply, etc..)")
         ("agg-path", po::value<std::string>(), "path to aggregation file containing seg groups for each model vertex")
         ("segs-path", po::value<std::string>(), "path to segmentation file containing seg groups for each semantic object")
@@ -117,10 +118,30 @@ int main(int argc, char *argv[])
         std::cout << required << "\n";
         return 1;
     }
-
     //num_processed_poses = vm["pose-start"].as<int>();
 
+    // TODO: Separate this functionality from main
+    po::options_description scene_params_config("Scene params loaded from disk");
+    scene_params_config.add_options()
+	("colorHeight", po::value<int>(), "")
+	("colorWidth", po::value<int>(), "")
+	("fx_color", po::value<float>(), "")
+	("fy_color", po::value<float>(), "")
+	; 
+    std::string scene_params_path = vm["scene-params"].as<std::string>();
+    std::ifstream scene_params_file(scene_params_path);
+    po::variables_map vm_scene;
+    po::store(po::parse_config_file(scene_params_file, scene_params_config, true), vm_scene);
+    po::notify(vm_scene);
+
     Scene::Params scene_params;
+    
+    // TODO: Import these from one of the scene config files.
+    scene_params.projection_height = vm_scene["colorHeight"].as<int>();
+    scene_params.projection_width = vm_scene["colorWidth"].as<int>();
+    scene_params.fx_color = vm_scene["fx_color"].as<float>();
+    scene_params.fy_color = vm_scene["fy_color"].as<float>();
+   
     scene_params.model_path = vm["model"].as<std::string>();
     scene_params.aggregation_path = vm["agg-path"].as<std::string>();
     scene_params.segs_path = vm["segs-path"].as<std::string>();
@@ -145,10 +166,6 @@ int main(int argc, char *argv[])
         render_mode = Renderer::Mode::DNR;
         break;
     }
-
-    // TODO: Import these from one of the scene config files.
-    scene_params.projection_height = 968;
-    scene_params.projection_width = 1296;
 
     int r = run(scene_params,
                 vm["height"].as<int>(),
