@@ -48,7 +48,8 @@ public:
         int projection_height;
         int projection_width;
         float pose_interp_factor;
-
+	float fx_color;
+	float fy_color;
     };
     Scene(const Params &params);
 
