@@ -57,7 +57,7 @@ void FrameWriter::ConvertRawToSignificand(std::vector<unsigned short> &significa
 		const std::vector<float> &raw_in)
 {
    // TODO: Do this in parallel
-   for (int i = 0; i < m_height * m_width; i += NUM_UV_CHANNELS) {
+   for (int i = 0; i < m_height * m_width * NUM_UV_CHANNELS; i += NUM_UV_CHANNELS) {
    	for (int j = 0; j < NUM_UV_CHANNELS - 1; j++) {
       	    significand_out[i + j] = (unsigned short)(raw_in[i + j] * (1 << 16));
 	}
