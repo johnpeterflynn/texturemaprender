@@ -18,6 +18,7 @@ class FrameWriter {
 public:
     FrameWriter(int height, int width);
     FrameWriter(int height, int width, const std::string& output_path);
+    ~FrameWriter();
 
     void setPath(const std::string& output_path);
 

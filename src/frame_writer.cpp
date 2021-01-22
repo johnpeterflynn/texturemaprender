@@ -30,6 +30,13 @@ FrameWriter::FrameWriter(int height, int width, const std::string& output_path)
    setPath(output_path);
 }
 
+FrameWriter::~FrameWriter() {
+   // No reading or writing data vectors until last read finishes  
+   if (m_p_write_thread) {
+	   m_p_write_thread->join();
+   } 
+}
+
 void FrameWriter::setPath(const std::string& output_path) {
    m_output_path = output_path;
 }
