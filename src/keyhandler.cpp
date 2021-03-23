@@ -202,7 +202,7 @@ bool KeyHandler::keyIsPressed(KeyListener::Key key) {
 
 void KeyHandler::NotifyAllMouse(double xoffset, double yoffset) {
     for (auto & observer : m_observers) {
-        observer->NotifyMouse(xoffset, yoffset);
+        //observer->NotifyMouse(xoffset, yoffset);
     }
 }
 
