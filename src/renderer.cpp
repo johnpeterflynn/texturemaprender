@@ -148,7 +148,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
     snap_filename = dnr::format::intToString(m_num_snaps, 7);
     if (m_b_snapshot || (writeToFile && (m_render_mode == Mode::UV))) {
         // Take snapshot of uv coords
-        m_frameWriter.WriteAsTexcoord(std::string("snapshots/uv/") + snap_filename);
+        m_frameWriter.WriteAsTexcoord(std::string("uv/") + snap_filename);
     }
 
     if (m_render_mode == Mode::DNR) {
@@ -200,7 +200,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
         // TODO: Use a consistent method for concatenating file paths
 
         // Take a picture snapshot
-        m_frameWriter.WriteAsJpg(std::string("snapshots/color/") + snap_filename);
+        m_frameWriter.WriteAsJpg(std::string("color/") + snap_filename);
     }
 
     if(m_b_snapshot || writeToFile) {
@@ -211,7 +211,7 @@ void Renderer::Draw(Scene& scene, bool writeToFile) {
                               glm::vec3(1.0f, 0.0f, 0.0f));
 
         // Take a pose snapshot
-        scene.m_cam_loader.savePose(pose, std::string("snapshots/pose/") + snap_filename);
+        scene.m_cam_loader.savePose(pose, std::string("pose/") + snap_filename);
 
         // Clear snapshot flags
         m_b_snapshot = false;

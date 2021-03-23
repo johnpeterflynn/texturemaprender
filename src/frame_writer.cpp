@@ -76,6 +76,8 @@ void FrameWriter::ConvertRawToSignificand(std::vector<unsigned short> &significa
 
 void FrameWriter::WriteAsTexcoord(const std::string& filename)
 {
+   std::string filepath = (m_output_path / filename).string();
+   std::cout << "FrameWriter::WriteAsTexcoord(): " << filepath << "\n";
    ReadBufferAsTexcoord(m_data_raw);
 
    // No reading or writing data vectors until last read finishes  
@@ -88,7 +90,7 @@ void FrameWriter::WriteAsTexcoord(const std::string& filename)
    m_p_write_thread = std::make_shared<std::thread>(CompressWriteFile,
 		   (char*)m_data_significand.data(),
                      m_height * m_width * NUM_UV_CHANNELS * sizeof(unsigned short),
-                     filename);
+                     filepath);
 }
 
 void FrameWriter::WriteAsJpg(const std::string& filename) {
