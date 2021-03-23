@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include <glad/glad.h> // holds all OpenGL type declarations
+//#include <glad/glad.h> // holds all OpenGL type declarations
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,24 +20,20 @@ DNRenderer::DNRenderer(int height, int width, const std::string& model_filename)
 }
 
 DNRenderer::DNRenderer(int height, int width)
-    : m_render_height(height)
+    : m_autograd_mode(false)
+    , m_render_height(height)
     , m_render_width(width)
     , index(0)
 {
 #ifdef __APPLE__
     std::cout << "Warning: CUDA not suppored on Apple device. Using CPU.\n";
 #endif
-    m_grid = torch::ones({1, m_render_height, m_render_width, 2}, torch::kFloat32);
 
-    for (int row = 0; row < m_render_height; row++) {
-        for (int col = 0; col < m_render_width; col++) {
-            m_grid[0][row][col][0] = (2.0 * (row / (float)(m_render_height - 1)) - 1.0);
-            m_grid[0][row][col][1] = 2.0 * (col / (float)(m_render_width - 1)) - 1.0;
-        }
-    }
-#ifndef __APPLE__
-    m_grid = m_grid.to(at::kCUDA);
-#endif
+    std::cout << "Benchmarked: " << torch::globalContext().benchmarkCuDNN() << "\n";
+    std::cout << "User enabled cudnn: " << torch::globalContext().userEnabledCuDNN() << "\n";
+    torch::globalContext().setUserEnabledCuDNN(true);
+    torch::globalContext().setBenchmarkCuDNN(true);
+    torch::globalContext().setFlushDenormal(true);
 }
 
 int DNRenderer::load(const std::string& model_filename) {
@@ -62,7 +58,7 @@ int DNRenderer::load(const std::string& model_filename) {
 }
 
 // WARNING: This function probably modifies the content of data
-void DNRenderer::render(float* data, int rows, int cols, bool writeout) {
+void DNRenderer::render(float *data, int rows, int cols, bool writeout) {
     /*
     Timer& timer = Timer::get();
     timer.checkpoint("checkpoint test 1");

@@ -5,6 +5,8 @@
 #include <torch/script.h>
 #include <memory>
 
+#include <cuda_gl_interop.h>
+
 #include <string>
 
 class DNRenderer {
@@ -14,7 +16,7 @@ public:
 
     int load(const std::string& model_filename);
 
-    void render(float* data, int rows, int cols, bool write);
+    void render(float *data, int rows, int cols, bool write);
 
     torch::Tensor m_output;
 
@@ -22,8 +24,8 @@ private:
     void write(torch::Tensor& out, bool write);
 
     torch::NoGradGuard m_no_grad_guard;
+    torch::AutoGradMode m_autograd_mode;
     torch::jit::script::Module m_model;
-    torch::Tensor m_grid;
 
     const int m_render_height;
     const int m_render_width;
