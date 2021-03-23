@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -39,7 +40,12 @@ Scene::Scene(const Scene::Params &params)
     , m_selected_instantiated_model(-1)
 
 {
+    // TODO: Where to put this?
+    // TODO: Why and when do use fy/height instead of fx/width?
+    float fov_deg = 2 * atan2(params.projection_height / 2, params.fy_color) * 180.0 * glm::one_over_pi<float>();
     m_camera.setParams(m_cam_loader.m_intrinsics, m_cam_loader.m_extrinsics);
+
+    std::cout << "FOV: " << fov_deg << "\n";
 
     auto model_semantic_labels = m_model.loadSegmentLabels();
     for (int i = 0; i < model_semantic_labels.size(); i++) {
